@@ -1,0 +1,517 @@
+2026-03-09 22:59:51.026 +08:00 [INF] Executed DbCommand (21ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+PRAGMA journal_mode = 'wal';
+2026-03-09 22:59:51.237 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "LoginLogs" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_LoginLogs" PRIMARY KEY AUTOINCREMENT,
+    "UserId" INTEGER NULL,
+    "Username" TEXT NOT NULL,
+    "Success" INTEGER NOT NULL,
+    "Ip" TEXT NULL,
+    "UserAgent" TEXT NULL,
+    "CreatedAt" TEXT NOT NULL
+);
+2026-03-09 22:59:51.237 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Menus" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Menus" PRIMARY KEY AUTOINCREMENT,
+    "Code" TEXT NOT NULL,
+    "Name" TEXT NOT NULL,
+    "Path" TEXT NULL,
+    "Icon" TEXT NULL,
+    "ParentId" INTEGER NULL,
+    "Sort" INTEGER NOT NULL
+);
+2026-03-09 22:59:51.238 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "OperationLogs" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_OperationLogs" PRIMARY KEY AUTOINCREMENT,
+    "UserId" INTEGER NULL,
+    "Action" TEXT NOT NULL,
+    "Module" TEXT NOT NULL,
+    "Details" TEXT NULL,
+    "Ip" TEXT NULL,
+    "CreatedAt" TEXT NOT NULL
+);
+2026-03-09 22:59:51.238 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Roles" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Roles" PRIMARY KEY AUTOINCREMENT,
+    "Name" TEXT NOT NULL,
+    "Description" TEXT NULL,
+    "CreatedAt" TEXT NOT NULL
+);
+2026-03-09 22:59:51.238 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Settings" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Settings" PRIMARY KEY AUTOINCREMENT,
+    "Key" TEXT NOT NULL,
+    "Value" TEXT NULL,
+    "Description" TEXT NULL
+);
+2026-03-09 22:59:51.239 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "SystemLogs" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_SystemLogs" PRIMARY KEY AUTOINCREMENT,
+    "Level" TEXT NOT NULL,
+    "Source" TEXT NOT NULL,
+    "Message" TEXT NOT NULL,
+    "StackTrace" TEXT NULL,
+    "CreatedAt" TEXT NOT NULL
+);
+2026-03-09 22:59:51.239 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Users" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY AUTOINCREMENT,
+    "Username" TEXT NOT NULL,
+    "Email" TEXT NOT NULL,
+    "Phone" TEXT NULL,
+    "PasswordHash" TEXT NOT NULL,
+    "Status" INTEGER NOT NULL,
+    "CreatedAt" TEXT NOT NULL,
+    "UpdatedAt" TEXT NULL
+);
+2026-03-09 22:59:51.242 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "Versions" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Versions" PRIMARY KEY AUTOINCREMENT,
+    "VersionNo" TEXT NOT NULL,
+    "FilePath" TEXT NOT NULL,
+    "FileHash" TEXT NOT NULL,
+    "FileSize" INTEGER NOT NULL,
+    "ReleaseNotes" TEXT NOT NULL,
+    "IsCurrent" INTEGER NOT NULL,
+    "UploadedAt" TEXT NOT NULL,
+    "UploadedBy" INTEGER NULL
+);
+2026-03-09 22:59:51.242 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "RoleMenus" (
+    "RoleId" INTEGER NOT NULL,
+    "MenuId" INTEGER NOT NULL,
+    CONSTRAINT "PK_RoleMenus" PRIMARY KEY ("RoleId", "MenuId"),
+    CONSTRAINT "FK_RoleMenus_Menus_MenuId" FOREIGN KEY ("MenuId") REFERENCES "Menus" ("Id") ON DELETE CASCADE,
+    CONSTRAINT "FK_RoleMenus_Roles_RoleId" FOREIGN KEY ("RoleId") REFERENCES "Roles" ("Id") ON DELETE CASCADE
+);
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE "UserRoles" (
+    "UserId" INTEGER NOT NULL,
+    "RoleId" INTEGER NOT NULL,
+    CONSTRAINT "PK_UserRoles" PRIMARY KEY ("UserId", "RoleId"),
+    CONSTRAINT "FK_UserRoles_Roles_RoleId" FOREIGN KEY ("RoleId") REFERENCES "Roles" ("Id") ON DELETE CASCADE,
+    CONSTRAINT "FK_UserRoles_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (1, 'dashboard', 'Home', '首页', NULL, '/dashboard', 1);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (2, 'users', 'User', '用户管理', NULL, '/users', 2);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (3, 'roles', 'Lock', '角色管理', NULL, '/roles', 3);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (4, 'versions', 'Upload', '版本管理', NULL, '/versions', 4);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (5, 'logs', 'FileText', '日志管理', NULL, '/logs', 5);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (6, 'settings', 'Settings', '系统配置', NULL, '/settings', 6);
+SELECT changes();
+
+INSERT INTO "Menus" ("Id", "Code", "Icon", "Name", "ParentId", "Path", "Sort")
+VALUES (7, 'monitor', 'Activity', '监控面板', NULL, '/monitor', 7);
+SELECT changes();
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Roles" ("Id", "CreatedAt", "Description", "Name")
+VALUES (1, '2026-03-09 14:59:50.8565164', '系统管理员', 'Admin');
+SELECT changes();
+
+INSERT INTO "Roles" ("Id", "CreatedAt", "Description", "Name")
+VALUES (2, '2026-03-09 14:59:50.856525', '普通用户', 'User');
+SELECT changes();
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Users" ("Id", "CreatedAt", "Email", "PasswordHash", "Phone", "Status", "UpdatedAt", "Username")
+VALUES (1, '2026-03-09 14:59:50.855892', 'admin@g2g.com', '$2a$11$r9SCrwEUy.hnLA38zvmuOuz6GL/HJUA0KwmFDPtjzPXmOuNtN1Ra2', NULL, 1, NULL, 'admin');
+SELECT changes();
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (1, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (2, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (3, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (4, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (5, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (6, 1);
+SELECT changes();
+
+INSERT INTO "RoleMenus" ("MenuId", "RoleId")
+VALUES (7, 1);
+SELECT changes();
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "UserRoles" ("RoleId", "UserId")
+VALUES (1, 1);
+SELECT changes();
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_LoginLogs_CreatedAt" ON "LoginLogs" ("CreatedAt");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_LoginLogs_Username" ON "LoginLogs" ("Username");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Menus_Code" ON "Menus" ("Code");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_OperationLogs_CreatedAt" ON "OperationLogs" ("CreatedAt");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_OperationLogs_UserId" ON "OperationLogs" ("UserId");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_RoleMenus_MenuId" ON "RoleMenus" ("MenuId");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Roles_Name" ON "Roles" ("Name");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Settings_Key" ON "Settings" ("Key");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_SystemLogs_CreatedAt" ON "SystemLogs" ("CreatedAt");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_SystemLogs_Level" ON "SystemLogs" ("Level");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX "IX_UserRoles_RoleId" ON "UserRoles" ("RoleId");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Users_Email" ON "Users" ("Email");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Users_Username" ON "Users" ("Username");
+2026-03-09 22:59:51.243 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX "IX_Versions_VersionNo" ON "Versions" ("VersionNo");
+2026-03-09 22:59:51.314 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 22:59:51.326 +08:00 [INF] Creating key {c367b26e-3174-499d-8f43-a277ddb4c3e0} with creation date 2026-03-09 14:59:51Z, activation date 2026-03-09 14:59:51Z, and expiration date 2026-06-07 14:59:51Z.
+2026-03-09 22:59:51.334 +08:00 [WRN] No XML encryptor configured. Key {c367b26e-3174-499d-8f43-a277ddb4c3e0} may be persisted to storage in unencrypted form.
+2026-03-09 22:59:51.336 +08:00 [INF] Writing data to file '/home/sunke/.aspnet/DataProtection-Keys/key-c367b26e-3174-499d-8f43-a277ddb4c3e0.xml'.
+2026-03-09 22:59:51.370 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 22:59:51.372 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 22:59:51.372 +08:00 [INF] Hosting environment: Development
+2026-03-09 22:59:51.372 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:00:13.280 +08:00 [INF] Application is shutting down...
+2026-03-09 23:04:31.854 +08:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:04:32.016 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:04:32.119 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:04:32.121 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:04:32.124 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:04:32.124 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:04:36.970 +08:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 42
+2026-03-09 23:04:37.023 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:04:37.038 +08:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(G2G.Admin.API.Models.LoginRequest) on controller G2G.Admin.API.Controllers.AuthController (G2G.Admin.API).
+2026-03-09 23:04:37.043 +08:00 [INF] Executed action G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API) in 1.1255ms
+2026-03-09 23:04:37.044 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:04:37.045 +08:00 [ERR] HTTP POST /api/auth/login responded 500 in 37.9340 ms
+System.InvalidOperationException: Unable to resolve service for type 'G2G.Admin.API.Services.IAuthService' while attempting to activate 'G2G.Admin.API.Controllers.AuthController'.
+   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)
+   at lambda_method44(Closure, IServiceProvider, Object[])
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-03-09 23:04:37.049 +08:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: Unable to resolve service for type 'G2G.Admin.API.Services.IAuthService' while attempting to activate 'G2G.Admin.API.Controllers.AuthController'.
+   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)
+   at lambda_method44(Closure, IServiceProvider, Object[])
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-03-09 23:04:37.060 +08:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 500 null text/plain; charset=utf-8 91.8674ms
+2026-03-09 23:04:44.647 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger - null null
+2026-03-09 23:04:44.656 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger - 301 0 null 9.9083ms
+2026-03-09 23:04:44.663 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - null null
+2026-03-09 23:04:44.729 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - 200 null text/html;charset=utf-8 66.4473ms
+2026-03-09 23:04:44.758 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - null null
+2026-03-09 23:04:44.765 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - null null
+2026-03-09 23:04:44.767 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - 200 26248 text/css 2.3414ms
+2026-03-09 23:04:44.772 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - 200 152 text/css 14.6272ms
+2026-03-09 23:04:44.773 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - null null
+2026-03-09 23:04:44.781 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - null null
+2026-03-09 23:04:44.807 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - null null
+2026-03-09 23:04:44.818 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - 200 null application/javascript;charset=utf-8 10.5693ms
+2026-03-09 23:04:44.845 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - 200 416963 text/javascript 72.1052ms
+2026-03-09 23:04:44.845 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - 200 76581 text/javascript 64.8185ms
+2026-03-09 23:04:44.907 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - null null
+2026-03-09 23:04:45.105 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 198.0738ms
+2026-03-09 23:04:45.107 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - null null
+2026-03-09 23:04:45.108 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - 200 628 image/png 0.7418ms
+2026-03-09 23:04:59.215 +08:00 [INF] Application is shutting down...
+2026-03-09 23:06:26.681 +08:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:06:26.818 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:06:26.857 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:06:26.858 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:06:26.858 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:06:26.859 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:07:07.655 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - null null
+2026-03-09 23:07:07.707 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - 304 null null 52.5429ms
+2026-03-09 23:07:07.738 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - null null
+2026-03-09 23:07:07.743 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - 304 null null 5.1433ms
+2026-03-09 23:07:07.743 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - null null
+2026-03-09 23:07:07.743 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - 304 null null 0.1934ms
+2026-03-09 23:07:07.743 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - null null
+2026-03-09 23:07:07.747 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - 304 null null 3.8639ms
+2026-03-09 23:07:07.747 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - null null
+2026-03-09 23:07:07.759 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - 304 null null 11.337ms
+2026-03-09 23:07:07.759 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - null null
+2026-03-09 23:07:07.759 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - 304 null null 0.2659ms
+2026-03-09 23:07:07.864 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - null null
+2026-03-09 23:07:08.059 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 195.7519ms
+2026-03-09 23:07:08.062 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - null null
+2026-03-09 23:07:08.062 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - 304 null null 0.2936ms
+2026-03-09 23:07:19.040 +08:00 [INF] Application is shutting down...
+2026-03-09 23:07:41.581 +08:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:07:41.725 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:07:41.767 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:07:41.770 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:07:41.771 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:07:41.771 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:07:50.208 +08:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 42
+2026-03-09 23:07:50.255 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:07:50.266 +08:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(G2G.Admin.API.Models.LoginRequest) on controller G2G.Admin.API.Controllers.AuthController (G2G.Admin.API).
+2026-03-09 23:07:50.562 +08:00 [INF] Executed DbCommand (6ms) [Parameters=[@request_Username='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."Id", "u"."CreatedAt", "u"."Email", "u"."PasswordHash", "u"."Phone", "u"."Status", "u"."UpdatedAt", "u"."Username"
+FROM "Users" AS "u"
+WHERE "u"."Username" = @request_Username
+LIMIT 1
+2026-03-09 23:07:50.842 +08:00 [INF] Executed DbCommand (1ms) [Parameters=[@user_Id='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT "r"."Name"
+FROM "UserRoles" AS "u"
+INNER JOIN "Roles" AS "r" ON "u"."RoleId" = "r"."Id"
+WHERE "u"."UserId" = @user_Id
+2026-03-09 23:07:50.859 +08:00 [INF] 用户登录成功：admin
+2026-03-09 23:07:50.920 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (Size = 9), @p2='?' (DbType = Boolean), @p3='?' (Size = 10), @p4='?' (DbType = Int32), @p5='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "LoginLogs" ("CreatedAt", "Ip", "Success", "UserAgent", "UserId", "Username")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+RETURNING "Id";
+2026-03-09 23:07:50.941 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Models.LoginResponse'.
+2026-03-09 23:07:50.951 +08:00 [INF] Executed action G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API) in 680.1254ms
+2026-03-09 23:07:50.954 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:07:50.956 +08:00 [INF] HTTP POST /api/auth/login responded 200 in 712.5089 ms
+2026-03-09 23:07:50.960 +08:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 200 null application/json; charset=utf-8 753.6498ms
+2026-03-09 23:08:40.146 +08:00 [INF] Application is shutting down...
+2026-03-09 23:09:10.449 +08:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:09:10.620 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:09:10.660 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:09:10.663 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:09:10.664 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:09:10.664 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:09:10.915 +08:00 [INF] Request starting HTTP/1.1 POST http://192.168.1.21:5000/api/Auth/login - application/json 51
+2026-03-09 23:09:10.944 +08:00 [INF] CORS policy execution failed.
+2026-03-09 23:09:10.944 +08:00 [INF] Request origin http://192.168.1.21:5000 does not have permission to access the resource.
+2026-03-09 23:09:10.956 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:09:10.969 +08:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(G2G.Admin.API.Models.LoginRequest) on controller G2G.Admin.API.Controllers.AuthController (G2G.Admin.API).
+2026-03-09 23:09:11.398 +08:00 [INF] Executed DbCommand (2ms) [Parameters=[@request_Username='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."Id", "u"."CreatedAt", "u"."Email", "u"."PasswordHash", "u"."Phone", "u"."Status", "u"."UpdatedAt", "u"."Username"
+FROM "Users" AS "u"
+WHERE "u"."Username" = @request_Username
+LIMIT 1
+2026-03-09 23:09:11.657 +08:00 [INF] Executed DbCommand (1ms) [Parameters=[@user_Id='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT "r"."Name"
+FROM "UserRoles" AS "u"
+INNER JOIN "Roles" AS "r" ON "u"."RoleId" = "r"."Id"
+WHERE "u"."UserId" = @user_Id
+2026-03-09 23:09:11.668 +08:00 [INF] 用户登录成功：admin
+2026-03-09 23:09:11.730 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (Size = 11), @p2='?' (DbType = Boolean), @p3='?' (Size = 125), @p4='?' (DbType = Int32), @p5='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "LoginLogs" ("CreatedAt", "Ip", "Success", "UserAgent", "UserId", "Username")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+RETURNING "Id";
+2026-03-09 23:09:11.754 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Models.LoginResponse'.
+2026-03-09 23:09:11.760 +08:00 [INF] Executed action G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API) in 789.696ms
+2026-03-09 23:09:11.761 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:09:11.762 +08:00 [INF] HTTP POST /api/Auth/login responded 200 in 818.2300 ms
+2026-03-09 23:09:11.765 +08:00 [INF] Request finished HTTP/1.1 POST http://192.168.1.21:5000/api/Auth/login - 200 null application/json; charset=utf-8 850.9639ms
+2026-03-09 23:09:17.188 +08:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 42
+2026-03-09 23:09:17.201 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:09:17.202 +08:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(G2G.Admin.API.Models.LoginRequest) on controller G2G.Admin.API.Controllers.AuthController (G2G.Admin.API).
+2026-03-09 23:09:17.288 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@request_Username='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."Id", "u"."CreatedAt", "u"."Email", "u"."PasswordHash", "u"."Phone", "u"."Status", "u"."UpdatedAt", "u"."Username"
+FROM "Users" AS "u"
+WHERE "u"."Username" = @request_Username
+LIMIT 1
+2026-03-09 23:09:17.596 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@user_Id='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT "r"."Name"
+FROM "UserRoles" AS "u"
+INNER JOIN "Roles" AS "r" ON "u"."RoleId" = "r"."Id"
+WHERE "u"."UserId" = @user_Id
+2026-03-09 23:09:17.597 +08:00 [INF] 用户登录成功：admin
+2026-03-09 23:09:17.598 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = DateTime), @p1='?' (Size = 9), @p2='?' (DbType = Boolean), @p3='?' (Size = 10), @p4='?' (DbType = Int32), @p5='?' (Size = 5)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "LoginLogs" ("CreatedAt", "Ip", "Success", "UserAgent", "UserId", "Username")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+RETURNING "Id";
+2026-03-09 23:09:17.609 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Models.LoginResponse'.
+2026-03-09 23:09:17.610 +08:00 [INF] Executed action G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API) in 408.1395ms
+2026-03-09 23:09:17.610 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.AuthController.Login (G2G.Admin.API)'
+2026-03-09 23:09:17.610 +08:00 [INF] HTTP POST /api/auth/login responded 200 in 413.2182 ms
+2026-03-09 23:09:17.617 +08:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 200 null application/json; charset=utf-8 428.6597ms
+2026-03-09 23:09:17.623 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/users - null null
+2026-03-09 23:09:17.647 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.UsersController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.651 +08:00 [INF] Route matched with {action = "GetAll", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetAll(Int32, Int32) on controller G2G.Admin.API.Controllers.UsersController (G2G.Admin.API).
+2026-03-09 23:09:17.657 +08:00 [WRN] The query uses a row limiting operator ('Skip'/'Take') without an 'OrderBy' operator. This may lead to unpredictable results. If the 'Distinct' operator is used after 'OrderBy', then make sure to use the 'OrderBy' operator after 'Distinct' as the ordering would otherwise get erased.
+2026-03-09 23:09:17.658 +08:00 [WRN] The query uses a row limiting operator ('Skip'/'Take') without an 'OrderBy' operator. This may lead to unpredictable results. If the 'Distinct' operator is used after 'OrderBy', then make sure to use the 'OrderBy' operator after 'Distinct' as the ordering would otherwise get erased.
+2026-03-09 23:09:17.661 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT "u"."Id", "u"."CreatedAt", "u"."Email", "u"."PasswordHash", "u"."Phone", "u"."Status", "u"."UpdatedAt", "u"."Username"
+FROM "Users" AS "u"
+LIMIT @p1 OFFSET @p
+2026-03-09 23:09:17.661 +08:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[G2G.Admin.API.Entities.User, G2G.Admin.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-03-09 23:09:17.672 +08:00 [INF] Executed action G2G.Admin.API.Controllers.UsersController.GetAll (G2G.Admin.API) in 20.7847ms
+2026-03-09 23:09:17.673 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.UsersController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.673 +08:00 [INF] HTTP GET /api/users responded 200 in 46.2388 ms
+2026-03-09 23:09:17.676 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/users - 200 null application/json; charset=utf-8 53.05ms
+2026-03-09 23:09:17.683 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/roles - null null
+2026-03-09 23:09:17.686 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.RolesController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.689 +08:00 [INF] Route matched with {action = "GetAll", controller = "Roles"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetAll() on controller G2G.Admin.API.Controllers.RolesController (G2G.Admin.API).
+2026-03-09 23:09:17.693 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "r"."Id", "r"."CreatedAt", "r"."Description", "r"."Name"
+FROM "Roles" AS "r"
+2026-03-09 23:09:17.701 +08:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[G2G.Admin.API.Entities.Role, G2G.Admin.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-03-09 23:09:17.702 +08:00 [INF] Executed action G2G.Admin.API.Controllers.RolesController.GetAll (G2G.Admin.API) in 12.7311ms
+2026-03-09 23:09:17.702 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.RolesController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.702 +08:00 [INF] HTTP GET /api/roles responded 200 in 19.1433 ms
+2026-03-09 23:09:17.710 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/roles - 200 null application/json; charset=utf-8 26.8069ms
+2026-03-09 23:09:17.712 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/menus - null null
+2026-03-09 23:09:17.713 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.MenusController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.717 +08:00 [INF] Route matched with {action = "GetAll", controller = "Menus"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetAll() on controller G2G.Admin.API.Controllers.MenusController (G2G.Admin.API).
+2026-03-09 23:09:17.723 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "m"."Id", "m"."Code", "m"."Icon", "m"."Name", "m"."ParentId", "m"."Path", "m"."Sort"
+FROM "Menus" AS "m"
+ORDER BY "m"."Sort"
+2026-03-09 23:09:17.730 +08:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[G2G.Admin.API.Entities.Menu, G2G.Admin.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-03-09 23:09:17.731 +08:00 [INF] Executed action G2G.Admin.API.Controllers.MenusController.GetAll (G2G.Admin.API) in 14.7187ms
+2026-03-09 23:09:17.731 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.MenusController.GetAll (G2G.Admin.API)'
+2026-03-09 23:09:17.731 +08:00 [INF] HTTP GET /api/menus responded 200 in 19.2300 ms
+2026-03-09 23:09:17.735 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/menus - 200 null application/json; charset=utf-8 22.7883ms
+2026-03-09 23:09:17.744 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/dashboard/stats - null null
+2026-03-09 23:09:17.744 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.DashboardController.GetStats (G2G.Admin.API)'
+2026-03-09 23:09:17.748 +08:00 [INF] Route matched with {action = "GetStats", controller = "Dashboard"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetStats() on controller G2G.Admin.API.Controllers.DashboardController (G2G.Admin.API).
+2026-03-09 23:09:17.764 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "Users" AS "u"
+2026-03-09 23:09:17.767 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "Users" AS "u"
+WHERE "u"."Status"
+2026-03-09 23:09:17.769 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "Roles" AS "r"
+2026-03-09 23:09:17.772 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "Versions" AS "v"
+2026-03-09 23:09:17.774 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "OperationLogs" AS "o"
+2026-03-09 23:09:17.776 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "LoginLogs" AS "l"
+2026-03-09 23:09:17.777 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "SystemLogs" AS "s"
+2026-03-09 23:09:17.778 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Services.DashboardStatsDto'.
+2026-03-09 23:09:17.779 +08:00 [INF] Executed action G2G.Admin.API.Controllers.DashboardController.GetStats (G2G.Admin.API) in 30.9352ms
+2026-03-09 23:09:17.779 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.DashboardController.GetStats (G2G.Admin.API)'
+2026-03-09 23:09:17.779 +08:00 [INF] HTTP GET /api/dashboard/stats responded 200 in 34.8196 ms
+2026-03-09 23:09:17.786 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/dashboard/stats - 200 null application/json; charset=utf-8 42.2932ms
+2026-03-09 23:09:17.789 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/monitor/system - null null
+2026-03-09 23:09:17.789 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.MonitorController.GetSystemInfo (G2G.Admin.API)'
+2026-03-09 23:09:17.793 +08:00 [INF] Route matched with {action = "GetSystemInfo", controller = "Monitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetSystemInfo() on controller G2G.Admin.API.Controllers.MonitorController (G2G.Admin.API).
+2026-03-09 23:09:17.796 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Services.SystemInfoDto'.
+2026-03-09 23:09:17.798 +08:00 [INF] Executed action G2G.Admin.API.Controllers.MonitorController.GetSystemInfo (G2G.Admin.API) in 5.0631ms
+2026-03-09 23:09:17.798 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.MonitorController.GetSystemInfo (G2G.Admin.API)'
+2026-03-09 23:09:17.798 +08:00 [INF] HTTP GET /api/monitor/system responded 200 in 9.2774 ms
+2026-03-09 23:09:17.798 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/monitor/system - 200 null application/json; charset=utf-8 9.5525ms
+2026-03-09 23:09:17.811 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/monitor/health - null null
+2026-03-09 23:09:17.812 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API)'
+2026-03-09 23:09:17.815 +08:00 [INF] Route matched with {action = "GetHealthCheck", controller = "Monitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetHealthCheck() on controller G2G.Admin.API.Controllers.MonitorController (G2G.Admin.API).
+2026-03-09 23:09:17.819 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Services.HealthCheckDto'.
+2026-03-09 23:09:17.820 +08:00 [INF] Executed action G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API) in 4.8895ms
+2026-03-09 23:09:17.820 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API)'
+2026-03-09 23:09:17.820 +08:00 [INF] HTTP GET /api/monitor/health responded 200 in 8.4434 ms
+2026-03-09 23:09:17.820 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/monitor/health - 200 null application/json; charset=utf-8 9.2129ms
+2026-03-09 23:09:17.829 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/logs/operation?page=1&pageSize=10 - null null
+2026-03-09 23:09:17.829 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.LogsController.GetOperationLogs (G2G.Admin.API)'
+2026-03-09 23:09:17.833 +08:00 [INF] Route matched with {action = "GetOperationLogs", controller = "Logs"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetOperationLogs(Int32, Int32, System.Nullable`1[System.DateTime], System.Nullable`1[System.DateTime], System.String) on controller G2G.Admin.API.Controllers.LogsController (G2G.Admin.API).
+2026-03-09 23:09:17.838 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM "OperationLogs" AS "o"
+2026-03-09 23:09:17.844 +08:00 [INF] Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT "o"."Id", "o"."Action", "o"."CreatedAt", "o"."Details", "o"."Ip", "o"."Module", "o"."UserId"
+FROM "OperationLogs" AS "o"
+ORDER BY "o"."CreatedAt" DESC
+LIMIT @p1 OFFSET @p
+2026-03-09 23:09:17.844 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Services.PagedResult`1[[G2G.Admin.API.Entities.Logs.OperationLog, G2G.Admin.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2026-03-09 23:09:17.846 +08:00 [INF] Executed action G2G.Admin.API.Controllers.LogsController.GetOperationLogs (G2G.Admin.API) in 12.2748ms
+2026-03-09 23:09:17.846 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.LogsController.GetOperationLogs (G2G.Admin.API)'
+2026-03-09 23:09:17.846 +08:00 [INF] HTTP GET /api/logs/operation responded 200 in 17.0040 ms
+2026-03-09 23:09:17.846 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/logs/operation?page=1&pageSize=10 - 200 null application/json; charset=utf-8 17.2978ms
+2026-03-09 23:10:07.996 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - null null
+2026-03-09 23:10:08.058 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.html - 304 null null 61.5992ms
+2026-03-09 23:10:08.081 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - null null
+2026-03-09 23:10:08.081 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - null null
+2026-03-09 23:10:08.084 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui.css - 304 null null 3.88ms
+2026-03-09 23:10:08.086 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - null null
+2026-03-09 23:10:08.088 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.js - 304 null null 1.8162ms
+2026-03-09 23:10:08.087 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - null null
+2026-03-09 23:10:08.087 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - null null
+2026-03-09 23:10:08.087 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/index.css - 304 null null 6.3492ms
+2026-03-09 23:10:08.090 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-standalone-preset.js - 304 null null 3.0833ms
+2026-03-09 23:10:08.095 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/swagger-ui-bundle.js - 304 null null 7.6238ms
+2026-03-09 23:10:08.134 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - null null
+2026-03-09 23:10:08.136 +08:00 [INF] Request starting HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - null null
+2026-03-09 23:10:08.142 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/favicon-32x32.png - 304 null null 7.3883ms
+2026-03-09 23:10:08.249 +08:00 [INF] Request finished HTTP/1.1 GET http://192.168.1.21:5000/swagger/v1/swagger.json - 200 null application/json;charset=utf-8 112.6039ms
+2026-03-09 23:10:09.179 +08:00 [INF] Application is shutting down...
+2026-03-09 23:17:03.945 +08:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:17:04.139 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:17:04.205 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:17:04.210 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:17:04.213 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:17:04.213 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:17:33.931 +08:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+2026-03-09 23:17:34.070 +08:00 [INF] User profile is available. Using '/home/sunke/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2026-03-09 23:17:34.106 +08:00 [INF] Now listening on: http://0.0.0.0:5000
+2026-03-09 23:17:34.106 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-03-09 23:17:34.107 +08:00 [INF] Hosting environment: Development
+2026-03-09 23:17:34.107 +08:00 [INF] Content root path: /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API
+2026-03-09 23:17:51.791 +08:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/monitor/health - null null
+2026-03-09 23:17:51.892 +08:00 [INF] Executing endpoint 'G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API)'
+2026-03-09 23:17:51.907 +08:00 [INF] Route matched with {action = "GetHealthCheck", controller = "Monitor"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetHealthCheck() on controller G2G.Admin.API.Controllers.MonitorController (G2G.Admin.API).
+2026-03-09 23:17:51.935 +08:00 [INF] Executing OkObjectResult, writing value of type 'G2G.Admin.API.Services.HealthCheckDto'.
+2026-03-09 23:17:51.959 +08:00 [INF] Executed action G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API) in 49.4001ms
+2026-03-09 23:17:51.960 +08:00 [INF] Executed endpoint 'G2G.Admin.API.Controllers.MonitorController.GetHealthCheck (G2G.Admin.API)'
+2026-03-09 23:17:51.963 +08:00 [INF] HTTP GET /api/monitor/health responded 200 in 95.2620 ms
+2026-03-09 23:17:51.965 +08:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/monitor/health - 200 null application/json; charset=utf-8 175.8542ms
+2026-03-09 23:18:31.697 +08:00 [INF] Application is shutting down...

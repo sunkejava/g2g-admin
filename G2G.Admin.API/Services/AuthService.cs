@@ -1,0 +1,100 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using G2G.Admin.API.Data;
+using G2G.Admin.API.Entities;
+using G2G.Admin.API.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace G2G.Admin.API.Services;
+
+public interface IAuthService
+{
+    Task<LoginResponse?> LoginAsync(LoginRequest request, string ip, string userAgent);
+    string GenerateToken(User user);
+}
+
+public class AuthService : IAuthService
+{
+    private readonly G2GDbContext _dbContext;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
+
+    public AuthService(G2GDbContext dbContext, IConfiguration configuration, ILogger<AuthService> logger)
+    {
+        _dbContext = dbContext;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    public async Task<LoginResponse?> LoginAsync(LoginRequest request, string ip, string userAgent)
+    {
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Username == request.Username);
+
+        if (user == null || !user.Status)
+        {
+            _logger.LogWarning("登录失败：用户不存在或被禁用 - {Username}", request.Username);
+            return null;
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            _logger.LogWarning("登录失败：密码错误 - {Username}", request.Username);
+            return null;
+        }
+
+        var token = GenerateToken(user);
+
+        return new LoginResponse
+        {
+            Token = token,
+            User = new UserInfo
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email
+            }
+        };
+    }
+
+    public string GenerateToken(User user)
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
+        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var roles = _dbContext.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+            .ToList();
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}

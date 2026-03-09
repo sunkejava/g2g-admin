@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Restore backend dependencies
+      run: dotnet restore G2G.Admin.API/G2G.Admin.API.csproj
+
+    - name: Build backend
+      run: dotnet build G2G.Admin.API/G2G.Admin.API.csproj --no-restore -c Release
+
+    - name: Test backend
+      run: dotnet test G2G.Admin.API/G2G.Admin.API.csproj --no-build -c Release
+
+    - name: Install frontend dependencies
+      run: cd frontend && npm ci
+
+    - name: Build frontend
+      run: cd frontend && npm run build
+
+    - name: Upload backend artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend
+        path: G2G.Admin.API/bin/Release
+
+    - name: Upload frontend artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend
+        path: frontend/dist
