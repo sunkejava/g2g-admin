@@ -7,6 +7,9 @@ obj/
 *.suo
 *.cache
 dist/
+*.dll
+*.pdb
+*.exe
 
 # Dependencies
 node_modules/
