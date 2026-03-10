@@ -41,29 +41,27 @@ public class MonitorService : IMonitorService
     private readonly G2GDbContext _dbContext;
     private readonly ILogger<MonitorService> _logger;
     private static readonly Process _currentProcess = Process.GetCurrentProcess();
-    private static readonly PerformanceCounter _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-    private DateTime _lastCpuReadTime = DateTime.MinValue;
-    private double _lastCpuValue = 0;
+    private DateTime _lastReadTime = DateTime.MinValue;
+    private long _lastCpuTicks = 0;
 
     public MonitorService(G2GDbContext dbContext, ILogger<MonitorService> logger)
     {
         _dbContext = dbContext;
         _logger = logger;
-        
-        // 初始化 CPU 计数器
-        _cpuCounter.NextValue(); // 第一次调用返回 0，预热
+        InitializeCpu();
+    }
+
+    private void InitializeCpu()
+    {
+        _lastReadTime = DateTime.UtcNow;
+        _lastCpuTicks = _currentProcess.TotalProcessorTime.Ticks;
     }
 
     public async Task<SystemInfoDto> GetSystemInfoAsync()
     {
-        // 获取系统内存信息
         var totalMemory = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
         var usedMemory = GC.GetTotalMemory(false);
-        
-        // 获取 CPU 使用率
         var cpuUsage = GetCpuUsage();
-        
-        // 获取磁盘信息
         var diskInfo = GetDiskInfo();
 
         var info = new SystemInfoDto
@@ -77,7 +75,7 @@ public class MonitorService : IMonitorService
             DiskUsagePercent = Math.Round((double)diskInfo.Used / diskInfo.Total * 100, 2),
             OsVersion = Environment.OSVersion.ToString(),
             ProcessorCount = Environment.ProcessorCount,
-            Uptime = _currentProcess.StartTime
+            Uptime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64)
         };
 
         return info;
@@ -120,20 +118,20 @@ public class MonitorService : IMonitorService
     {
         try
         {
-            // 确保两次读取间隔至少 250ms
-            var now = DateTime.Now;
-            var timeSinceLastRead = (now - _lastCpuReadTime).TotalMilliseconds;
+            var now = DateTime.UtcNow;
+            var currentCpuTicks = _currentProcess.TotalProcessorTime.Ticks;
+            var timeDiff = (now - _lastReadTime).Ticks;
+            var cpuDiff = currentCpuTicks - _lastCpuTicks;
             
-            if (timeSinceLastRead < 250)
-            {
-                return _lastCpuValue;
-            }
+            if (timeDiff <= 0) return 0;
             
-            _lastCpuReadTime = now;
-            _lastCpuValue = _cpuCounter.NextValue();
+            // 计算 CPU 使用率（考虑多核）
+            var cpuUsage = (double)cpuDiff / timeDiff * 100 / Environment.ProcessorCount;
             
-            // 限制最大值 100
-            return Math.Min(Math.Round(_lastCpuValue, 2), 100);
+            _lastReadTime = now;
+            _lastCpuTicks = currentCpuTicks;
+            
+            return Math.Min(Math.Round(cpuUsage, 2), 100);
         }
         catch (Exception ex)
         {
