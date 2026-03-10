@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  backend:
+  g2g-admin:
     build:
       context: ./G2G.Admin.API
       dockerfile: Dockerfile
@@ -12,16 +12,17 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/g2g-admin.db
+      - JwtSettings__SecretKey=YourSuperSecretKeyThatIsAtLeast32CharactersLong
+      - JwtSettings__Issuer=G2GAdmin
+      - JwtSettings__Audience=G2GAdminUser
+      - JwtSettings__ExpirationMinutes=60
     restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
