@@ -15,9 +15,9 @@ dist/
 node_modules/
 packages/
 
-# Logs
+# Logs (backend only)
 *.log
-logs/
+G2G.Admin.API/logs/
 
 # Database
 *.db
