@@ -109,8 +109,21 @@ const initDateRange = () => {
 const loadLogs = async () => {
   loading.value = true;
   try {
-    const from = dateRange.value?.[0] ? new Date(dateRange.value[0]).toISOString() : '';
-    const to = dateRange.value?.[1] ? new Date(dateRange.value[1]).toISOString() : '';
+    let from = '';
+    let to = '';
+    
+    if (dateRange.value?.[0]) {
+      // 开始日期：当天 00:00:00
+      const fromDate = new Date(dateRange.value[0]);
+      from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).toISOString();
+    }
+    
+    if (dateRange.value?.[1]) {
+      // 结束日期：当天 23:59:59
+      const toDate = new Date(dateRange.value[1]);
+      to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999).toISOString();
+    }
+    
     const url = `/logs/${activeTab.value}?page=${currentPage.value}&pageSize=${pageSize.value}&from=${from}&to=${to}&keyword=${keyword.value}`;
     const response = await api.get(url);
     logs.value = response.items || [];
