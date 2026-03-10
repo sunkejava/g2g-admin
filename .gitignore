@@ -10,6 +10,10 @@ dist/
 *.dll
 *.pdb
 *.exe
+publish/
+
+# Frontend build output (integrated to backend)
+G2G.Admin.API/wwwroot/
 
 # Dependencies
 node_modules/

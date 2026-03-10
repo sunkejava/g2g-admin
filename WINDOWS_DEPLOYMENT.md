@@ -1,99 +1,144 @@
 # 🪟 Windows 部署指南
 
-## 快速开始（推荐新手）
+## 🚀 快速开始（推荐）
 
-### 1. 环境准备
+### 一键部署和启动
 
-#### 安装 .NET 10 SDK
-1. 访问 [.NET 下载页面](https://dotnet.microsoft.com/download)
-2. 下载 **.NET 10 SDK** (x64)
-3. 运行安装程序，按提示完成安装
-4. 验证安装：
-   ```cmd
-   dotnet --version
-   ```
+#### 步骤 1: 环境准备
+```cmd
+# 安装 .NET 10 SDK
+https://dotnet.microsoft.com/download
 
-#### 安装 Node.js
-1. 访问 [Node.js 官网](https://nodejs.org/)
-2. 下载 **LTS 版本** (推荐 20.x)
-3. 运行安装程序
-4. 验证安装：
-   ```cmd
-   node --version
-   npm --version
-   ```
+# 安装 Node.js LTS
+https://nodejs.org/
+```
 
----
-
-### 2. 获取项目代码
-
-#### 方式一：克隆仓库（推荐）
+#### 步骤 2: 获取代码
 ```cmd
 cd C:\Projects
 git clone https://github.com/sunkejava/g2g-admin.git
 cd g2g-admin
 ```
 
-#### 方式二：下载 ZIP
-1. 访问 https://github.com/sunkejava/g2g-admin
-2. 点击 **Code** → **Download ZIP**
-3. 解压到 `C:\Projects\g2g-admin`
+#### 步骤 3: 一键部署
+双击运行 `deploy.bat`
+
+或命令行：
+```cmd
+deploy.bat
+```
+
+#### 步骤 4: 启动服务
+双击运行 `start.bat`
+
+或命令行：
+```cmd
+start.bat
+```
+
+#### 步骤 5: 访问系统
+打开浏览器：http://localhost:5000
+
+**默认账号**:
+- 用户名：`admin`
+- 密码：`admin123`
 
 ---
 
-### 3. 后端启动
+## 详细说明
 
-#### 步骤 1: 进入后端目录
-```cmd
-cd C:\Projects\g2g-admin\G2G.Admin.API
+### 架构说明
+
+**新部署方式**:
+- ✅ 前端打包后直接输出到后端 `wwwroot` 目录
+- ✅ 只需启动后端服务，即可访问前后端完整功能
+- ✅ 无需单独启动前端开发服务器
+- ✅ 生产环境部署更简单
+
+**文件结构**:
+```
+g2g-admin/
+├── G2G.Admin.API/
+│   ├── wwwroot/          # 前端打包文件（自动输出）
+│   ├── G2G.Admin.API.dll # 后端程序
+│   └── g2g-admin.db      # SQLite 数据库
+├── frontend/             # 前端源码
+├── deploy.bat            # 一键部署脚本
+└── start.bat             # 一键启动脚本
 ```
 
-#### 步骤 2: 还原 NuGet 包
+---
+
+### 开发环境运行
+
+#### 方式一：使用脚本（推荐）
 ```cmd
-dotnet restore
+:: 部署（首次运行）
+deploy.bat
+
+:: 启动
+start.bat
 ```
 
-#### 步骤 3: 运行后端
+#### 方式二：手动命令
+
+**1. 构建前端并输出到后端**
 ```cmd
+cd frontend
+npm install
+npm run build
+:: 文件自动输出到 ../G2G.Admin.API/wwwroot
+```
+
+**2. 启动后端**
+```cmd
+cd G2G.Admin.API
 dotnet run --urls="http://localhost:5000"
 ```
 
-#### 步骤 4: 验证后端
-打开浏览器访问：
-- API: http://localhost:5000
+**3. 访问**
+- 前端：http://localhost:5000
 - Swagger: http://localhost:5000/swagger
-
-**首次运行会自动**:
-- ✅ 创建 SQLite 数据库 (g2g-admin.db)
-- ✅ 初始化角色（超级管理员、普通用户、审计员）
-- ✅ 初始化菜单（7 个菜单）
-- ✅ 创建管理员账号（admin / admin123）
 
 ---
 
-### 4. 前端启动
+### 生产环境部署
 
-#### 步骤 1: 打开新的命令行窗口
-按 `Win + R`，输入 `cmd`，回车
-
-#### 步骤 2: 进入前端目录
+#### 步骤 1: 发布
 ```cmd
-cd C:\Projects\g2g-admin\frontend
+:: 执行一键部署
+deploy.bat
 ```
 
-#### 步骤 3: 安装依赖（首次运行）
-```cmd
-npm install
+#### 步骤 2: 配置（可选）
+编辑 `publish/appsettings.Production.json`:
+```json
+{
+  "JwtSettings": {
+    "SecretKey": "你的超长密钥（至少 32 位）"
+  },
+  "Serilog": {
+    "MinimumLevel": "Warning"
+  }
+}
 ```
 
-#### 步骤 4: 启动前端开发服务器
+#### 步骤 3: 启动
 ```cmd
-npm run dev
+cd publish
+dotnet G2G.Admin.API.dll --urls="http://0.0.0.0:5000"
 ```
 
-#### 步骤 5: 访问前端
-打开浏览器访问：
-- http://localhost:5173
+#### 步骤 4: 创建 Windows 服务（可选）
+
+使用 NSSM:
+```cmd
+nssm install G2GAdmin
+nssm set G2GAdmin Application "C:\Program Files\dotnet\dotnet.exe"
+nssm set G2GAdmin AppParameters "C:\Projects\g2g-admin\publish\G2G.Admin.API.dll"
+nssm set G2GAdmin AppDirectory "C:\Projects\g2g-admin\publish"
+nssm start G2GAdmin
+```
 
 ---
 

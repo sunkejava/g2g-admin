@@ -97,11 +97,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseSerilogRequestLogging();
 
+// 启用静态文件服务（前端打包文件）
+app.UseStaticFiles();
+
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// 前端路由回退（支持 Vue Router 的 history 模式）
+app.MapFallbackToFile("index.html");
 
 app.Run();
