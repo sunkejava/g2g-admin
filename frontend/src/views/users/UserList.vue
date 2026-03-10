@@ -64,9 +64,23 @@
           <el-input v-model="form.password" type="password" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.roleIds" multiple placeholder="请选择角色">
-            <el-option v-for="role in roles" :key="role.id" :label="role.name" :value="role.id" />
+          <el-select 
+            v-model="form.roleIds" 
+            multiple 
+            placeholder="请选择角色"
+            style="width: 100%"
+            :disabled="roles.length === 0"
+          >
+            <el-option 
+              v-for="role in roles" 
+              :key="role.id" 
+              :label="role.name" 
+              :value="role.id"
+            />
           </el-select>
+          <div v-if="roles.length === 0" style="color: #999; font-size: 12px; margin-top: 5px">
+            加载中...
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -116,9 +130,12 @@ const loadUsers = async () => {
 
 const loadRoles = async () => {
   try {
-    roles.value = await roleApi.getAll();
-  } catch (error) {
-    console.error('加载角色失败', error);
+    const data = await roleApi.getAll();
+    roles.value = data;
+    console.log('角色加载成功:', roles.value);
+  } catch (error: any) {
+    console.error('加载角色失败:', error);
+    ElMessage.error('加载角色失败：' + (error.message || '未知错误'));
   }
 };
 

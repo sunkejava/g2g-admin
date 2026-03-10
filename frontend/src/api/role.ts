@@ -27,7 +27,11 @@ export interface PagedResult<T> {
 }
 
 export const roleApi = {
-  getAll: () => api.get<Role[]>('/roles'),
+  // 获取所有角色（不分页，用于下拉选择）
+  getAll: async () => {
+    const response = await api.get<PagedResult<Role>>('/roles?page=1&pageSize=1000');
+    return response.items || [];
+  },
   
   getPage: (page: number = 1, pageSize: number = 10) => 
     api.get<PagedResult<Role>>(`/roles?page=${page}&pageSize=${pageSize}`),
