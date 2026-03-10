@@ -154,19 +154,19 @@ public class MonitorService : IMonitorService
                         // 可用内存 = 空闲 + 缓冲区 + 缓存
                         var availableKb = freeKb + buffersKb + cachedKb;
                         var usedKb = totalKb - availableKb;
-                        var percent = Math.Round((double)usedKb / totalKb * 100, 2);
+                        var percentLinux = Math.Round((double)usedKb / totalKb * 100, 2);
                         
-                        return (totalKb * 1024, usedKb * 1024, percent);
+                        return (totalKb * 1024, usedKb * 1024, percentLinux);
                     }
                 }
             }
             
             // 在 Windows 上或使用回退方案
-            var totalMemory = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-            var usedMemory = GC.GetTotalMemory(false);
-            var percent = totalMemory > 0 ? Math.Round((double)usedMemory / totalMemory * 100, 2) : 0;
+            var totalMemoryFallback = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+            var usedMemoryFallback = GC.GetTotalMemory(false);
+            var percentFallback = totalMemoryFallback > 0 ? Math.Round((double)usedMemoryFallback / totalMemoryFallback * 100, 2) : 0;
             
-            return (totalMemory, usedMemory, percent);
+            return (totalMemoryFallback, usedMemoryFallback, percentFallback);
         }
         catch (Exception ex)
         {
