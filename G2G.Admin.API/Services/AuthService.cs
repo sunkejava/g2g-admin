@@ -12,8 +12,16 @@ namespace G2G.Admin.API.Services;
 public interface IAuthService
 {
     Task<LoginResponse?> LoginAsync(LoginRequest request, string ip, string userAgent);
-    Task<User?> RegisterAsync(AuthController.RegisterRequest request, string ip);
+    Task<User?> RegisterAsync(RegisterRequest request, string ip);
     string GenerateToken(User user);
+}
+
+public class RegisterRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string Password { get; set; } = string.Empty;
 }
 
 public class AuthService : IAuthService
@@ -60,7 +68,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<User?> RegisterAsync(AuthController.RegisterRequest request, string ip)
+    public async Task<User?> RegisterAsync(RegisterRequest request, string ip)
     {
         // 检查用户名是否已存在
         var existingUser = await _dbContext.Users
