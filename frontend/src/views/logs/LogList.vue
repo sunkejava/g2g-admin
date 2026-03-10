@@ -149,8 +149,65 @@ const handleTabChange = () => {
 const handleExport = async () => {
   const from = dateRange.value?.[0] || '';
   const to = dateRange.value?.[1] || '';
-  window.open(`/api/logs/export/${activeTab.value}?from=${from}&to=${to}`, '_blank');
-  ElMessage.success('导出中...');
+  
+  // 构建导出文件名
+  const tabNames: Record<string, string> = {
+    operation: '操作日志',
+    system: '系统日志',
+    login: '登录日志'
+  };
+  const fileName = `${tabNames[activeTab.value]}_${from || '全部'}_${to || ''}.xlsx`;
+  
+  // 显示确认对话框
+  await ElMessageBox.confirm(
+    `确定要导出${tabNames[activeTab.value]}吗？${from && to ? `\n日期范围：${from} 至 ${to}` : '\n将导出所有数据'}`,
+    '导出确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    }
+  );
+  
+  try {
+    // 显示加载提示
+    const loadingMsg = ElMessage({
+      message: '正在导出，请稍候...',
+      type: 'info',
+      duration: 0
+    });
+    
+    // 构建下载 URL（带上 token）
+    const token = localStorage.getItem('token');
+    const exportUrl = `/api/logs/export/${activeTab.value}?from=${from}&to=${to}`;
+    
+    // 使用 fetch 下载，可以添加 header
+    const response = await fetch(exportUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('导出失败');
+    }
+    
+    // 获取 blob 并下载
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName.replace(/\//g, '-');
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    
+    loadingMsg.close();
+    ElMessage.success('导出成功');
+  } catch (error: any) {
+    ElMessage.error(error.message || '导出失败');
+  }
 };
 
 const clearDateFilter = () => {
