@@ -90,7 +90,23 @@ public class UsersController : ControllerBase
                 $"邮箱：{dto.Email}, 角色数：{dto.RoleIds?.Count ?? 0}"
             );
             
-            return Ok(user);
+            // 返回 DTO 而非实体，避免循环引用
+            var userDto = new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Phone = user.Phone,
+                Status = user.Status,
+                CreatedAt = user.CreatedAt,
+                Roles = user.UserRoles?.Select(ur => new RoleDto
+                {
+                    Id = ur.Role.Id,
+                    Name = ur.Role.Name
+                }).ToList() ?? new List<RoleDto>()
+            };
+            
+            return Ok(userDto);
         }
         catch (Exception ex)
         {
