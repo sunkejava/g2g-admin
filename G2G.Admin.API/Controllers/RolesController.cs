@@ -17,9 +17,9 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var roles = await _roleService.GetAllAsync();
+        var roles = await _roleService.GetAllAsync(page, pageSize);
         return Ok(roles);
     }
 

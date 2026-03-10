@@ -6,7 +6,7 @@ namespace G2G.Admin.API.Services;
 
 public interface IUserService
 {
-    Task<List<User>> GetAllAsync(int page = 1, int pageSize = 10);
+    Task<PagedResult<User>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null);
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByUsernameAsync(string username);
     Task<User> CreateAsync(CreateUserDto dto);
@@ -41,12 +41,24 @@ public class UserService : IUserService
         _dbContext = dbContext;
     }
 
-    public async Task<List<User>> GetAllAsync(int page = 1, int pageSize = 10)
+    public async Task<PagedResult<User>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null)
     {
-        return await _dbContext.Users
+        var query = _dbContext.Users.AsQueryable();
+        
+        if (!string.IsNullOrEmpty(keyword))
+        {
+            query = query.Where(u => u.Username.Contains(keyword) || u.Email.Contains(keyword));
+        }
+        
+        var total = await query.CountAsync();
+        var items = await query
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        
+        return new PagedResult<User> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<User?> GetByIdAsync(int id)

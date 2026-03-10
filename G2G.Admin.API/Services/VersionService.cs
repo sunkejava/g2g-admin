@@ -6,7 +6,7 @@ namespace G2G.Admin.API.Services;
 
 public interface IVersionService
 {
-    Task<List<AppVersion>> GetAllAsync();
+    Task<PagedResult<AppVersion>> GetAllAsync(int page = 1, int pageSize = 10);
     Task<AppVersion?> GetByIdAsync(int id);
     Task<AppVersion?> GetCurrentVersionAsync();
     Task<AppVersion> UploadAsync(UploadVersionDto dto, string filePath, string fileHash, long fileSize, int uploadedBy);
@@ -55,9 +55,17 @@ public class VersionService : IVersionService
         _environment = environment;
     }
 
-    public async Task<List<AppVersion>> GetAllAsync()
+    public async Task<PagedResult<AppVersion>> GetAllAsync(int page = 1, int pageSize = 10)
     {
-        return await _dbContext.Versions.OrderByDescending(v => v.UploadedAt).ToListAsync();
+        var query = _dbContext.Versions.AsQueryable();
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(v => v.UploadedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        
+        return new PagedResult<AppVersion> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<AppVersion?> GetByIdAsync(int id)

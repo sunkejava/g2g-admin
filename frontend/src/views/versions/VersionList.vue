@@ -25,6 +25,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="loadVersions"
+          @current-change="loadVersions"
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="uploadDialog" title="上传版本" width="500px">
@@ -36,7 +47,13 @@
           <el-input v-model="uploadForm.releaseNotes" type="textarea" />
         </el-form-item>
         <el-form-item label="安装包">
-          <el-upload drag action="#" :auto-upload="false" :on-change="handleFileChange" :limit="1">
+          <el-upload 
+            drag 
+            action="#" 
+            :auto-upload="false" 
+            :on-change="handleFileChange" 
+            :limit="1"
+          >
             <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处或<em>点击上传</em></div>
           </el-upload>
@@ -61,11 +78,16 @@ const uploadDialog = ref(false);
 const uploading = ref(false);
 const selectedFile = ref<File | null>(null);
 const uploadForm = reactive({ versionNo: '', releaseNotes: '' });
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 const loadVersions = async () => {
   loading.value = true;
   try {
-    versions.value = await api.get('/versions');
+    const response = await api.get(`/versions?page=${currentPage.value}&pageSize=${pageSize.value}`);
+    versions.value = response.items || [];
+    total.value = response.total || 0;
   } catch (error) {
     ElMessage.error('加载版本列表失败');
   } finally {
@@ -133,5 +155,10 @@ onMounted(() => {
 <style scoped>
 .toolbar {
   margin-bottom: 20px;
+}
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

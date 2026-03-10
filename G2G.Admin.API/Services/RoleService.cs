@@ -6,7 +6,7 @@ namespace G2G.Admin.API.Services;
 
 public interface IRoleService
 {
-    Task<List<Role>> GetAllAsync();
+    Task<PagedResult<Role>> GetAllAsync(int page = 1, int pageSize = 10);
     Task<Role?> GetByIdAsync(int id);
     Task<Role> CreateAsync(CreateRoleDto dto);
     Task<Role?> UpdateAsync(int id, UpdateRoleDto dto);
@@ -36,9 +36,16 @@ public class RoleService : IRoleService
         _dbContext = dbContext;
     }
 
-    public async Task<List<Role>> GetAllAsync()
+    public async Task<PagedResult<Role>> GetAllAsync(int page = 1, int pageSize = 10)
     {
-        return await _dbContext.Roles.ToListAsync();
+        var query = _dbContext.Roles.AsQueryable();
+        var total = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        
+        return new PagedResult<Role> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<Role?> GetByIdAsync(int id)

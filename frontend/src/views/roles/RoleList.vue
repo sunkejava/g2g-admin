@@ -16,6 +16,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="loadRoles"
+          @current-change="loadRoles"
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="400px">
@@ -33,8 +44,19 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="permissionDialog" title="权限配置" width="400px">
-      <el-tree :data="menus" show-checkbox node-key="id" :default-checked-keys="checkedMenus" ref="treeRef" />
+    <el-dialog v-model="permissionDialog" title="权限配置" width="500px">
+      <div class="permission-content">
+        <p class="permission-tip">请为角色 "{{ currentRoleName }}" 分配菜单权限</p>
+        <el-tree 
+          :data="menus" 
+          show-checkbox 
+          node-key="id" 
+          :default-checked-keys="checkedMenus"
+          :default-expanded-keys="expandedMenuIds"
+          ref="treeRef"
+          :props="{ children: 'children', label: 'name' }"
+        />
+      </div>
       <template #footer>
         <el-button @click="permissionDialog = false">取消</el-button>
         <el-button type="primary" @click="handleSavePermission">保存</el-button>
@@ -46,25 +68,32 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { roleApi, menuApi } from '@/api/role';
+import { roleApi, menuApi, Menu } from '@/api/role';
 
 const loading = ref(false);
 const roles = ref([]);
-const menus = ref([]);
+const menus = ref<Menu[]>([]);
 const dialogVisible = ref(false);
 const permissionDialog = ref(false);
 const isEdit = ref(false);
 const currentRoleId = ref(0);
+const currentRoleName = ref('');
 const checkedMenus = ref<number[]>([]);
+const expandedMenuIds = ref<number[]>([]);
 const formRef = ref();
 const treeRef = ref();
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 const form = reactive({ id: 0, name: '', description: '' });
 
 const loadRoles = async () => {
   loading.value = true;
   try {
-    roles.value = await roleApi.getAll();
+    const response = await roleApi.getPage(currentPage.value, pageSize.value);
+    roles.value = response.items || [];
+    total.value = response.total || 0;
   } catch (error) {
     ElMessage.error('加载角色列表失败');
   } finally {
@@ -75,6 +104,18 @@ const loadRoles = async () => {
 const loadMenus = async () => {
   try {
     menus.value = await menuApi.getTree();
+    // 获取所有菜单 ID 用于展开
+    const getAllIds = (nodes: Menu[]): number[] => {
+      let ids: number[] = [];
+      nodes.forEach(node => {
+        ids.push(node.id);
+        if ((node as any).children) {
+          ids = ids.concat(getAllIds((node as any).children));
+        }
+      });
+      return ids;
+    };
+    expandedMenuIds.value = getAllIds(menus.value);
   } catch (error) {
     console.error('加载菜单失败', error);
   }
@@ -121,15 +162,29 @@ const handleDelete = async (row: any) => {
 
 const handlePermission = async (row: any) => {
   currentRoleId.value = row.id;
+  currentRoleName.value = row.name;
   checkedMenus.value = [];
   permissionDialog.value = true;
+  
   await loadMenus();
+  
+  // 加载该角色已分配的菜单
+  try {
+    const assignedMenus = await roleApi.getMenus(row.id);
+    checkedMenus.value = assignedMenus.map(m => m.id);
+  } catch (error) {
+    console.error('加载角色菜单失败', error);
+  }
 };
 
 const handleSavePermission = async () => {
   const checkedKeys = treeRef.value?.getCheckedKeys() || [];
+  const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys() || [];
+  // 合并全选和半选的节点
+  const allCheckedKeys = [...checkedKeys, ...halfCheckedKeys];
+  
   try {
-    await roleApi.assignMenus(currentRoleId.value, checkedKeys);
+    await roleApi.assignMenus(currentRoleId.value, allCheckedKeys);
     ElMessage.success('权限配置成功');
     permissionDialog.value = false;
   } catch (error) {
@@ -145,5 +200,18 @@ onMounted(() => {
 <style scoped>
 .toolbar {
   margin-bottom: 20px;
+}
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+.permission-content {
+  padding: 10px 0;
+}
+.permission-tip {
+  color: #909399;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 </style>

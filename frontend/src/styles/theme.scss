@@ -1,0 +1,191 @@
+// G2G Admin - 未来科技感主题样式
+
+// 主题色系
+$themes: (
+  red: (
+    primary: #f56c6c,
+    secondary: #fde2e2,
+    gradient-start: #ff6b6b,
+    gradient-end: #ee5a6f
+  ),
+  orange: (
+    primary: #e6a23c,
+    secondary: #faecd8,
+    gradient-start: #f0932b,
+    gradient-end: #eb4d4b
+  ),
+  yellow: (
+    primary: #e6c200,
+    secondary: #fdf6ec,
+    gradient-start: #f1c40f,
+    gradient-end: #f39c12
+  ),
+  green: (
+    primary: #67c23a,
+    secondary: #f0f9eb,
+    gradient-start: #00b894,
+    gradient-end: #00cec9
+  ),
+  cyan: (
+    primary: #00bcd4,
+    secondary: #e0f7fa,
+    gradient-start: #00cec9,
+    gradient-end: #0984e3
+  ),
+  blue: (
+    primary: #409eff,
+    secondary: #ecf5ff,
+    gradient-start: #667eea,
+    gradient-end: #764ba2
+  ),
+  purple: (
+    primary: #9c27b0,
+    secondary: #f3e5f5,
+    gradient-start: #a29bfe,
+    gradient-end: #6c5ce7
+  )
+);
+
+// 默认主题
+$default-theme: map-get($themes, blue);
+
+// 主题变量
+$--color-primary: map-get($default-theme, primary) !default;
+$--color-primary-gradient-start: map-get($default-theme, gradient-start) !default;
+$--color-primary-gradient-end: map-get($default-theme, gradient-end) !default;
+
+// 科技感背景
+$tech-bg-dark: #0f0f23;
+$tech-bg-medium: #1a1a2e;
+$tech-bg-light: #16213e;
+$tech-accent: #00d9ff;
+$tech-text: #eaeaea;
+$tech-text-secondary: #a0a0a0;
+
+// 混合色函数
+@function theme-color($theme-name, $color-name) {
+  $theme: map-get($themes, $theme-name);
+  @return map-get($theme, $color-name);
+}
+
+// 生成主题类
+@mixin generate-theme($theme-name) {
+  $theme: map-get($themes, $theme-name);
+  
+  .theme-#{$theme-name} {
+    --el-color-primary: #{map-get($theme, primary)};
+    --el-color-primary-light-3: #{lighten(map-get($theme, primary), 15%)};
+    --el-color-primary-light-5: #{lighten(map-get($theme, primary), 25%)};
+    --el-color-primary-light-7: #{lighten(map-get($theme, primary), 35%)};
+    --el-color-primary-light-8: #{lighten(map-get($theme, primary), 40%)};
+    --el-color-primary-light-9: #{lighten(map-get($theme, primary), 45%)};
+    --el-color-primary-dark-2: #{darken(map-get($theme, primary), 10%)};
+    
+    --g2g-gradient-start: #{map-get($theme, gradient-start)};
+    --g2g-gradient-end: #{map-get($theme, gradient-end)};
+  }
+}
+
+// 为每个主题生成 CSS 变量
+@each $theme-name, $theme-colors in $themes {
+  @include generate-theme($theme-name);
+}
+
+// 全局样式
+:root {
+  --g2g-bg-dark: #{$tech-bg-dark};
+  --g2g-bg-medium: #{$tech-bg-medium};
+  --g2g-bg-light: #{$tech-bg-light};
+  --g2g-accent: #{$tech-accent};
+  --g2g-text: #{$tech-text};
+  --g2g-text-secondary: #{$tech-text-secondary};
+}
+
+// 科技感背景样式
+.tech-background {
+  background: linear-gradient(135deg, var(--g2g-bg-dark) 0%, var(--g2g-bg-medium) 50%, var(--g2g-bg-light) 100%);
+  min-height: 100vh;
+  
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+// 科技卡片样式
+.tech-card {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  &:hover {
+    border-color: rgba(0, 217, 255, 0.4);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.15);
+  }
+}
+
+// 科技按钮样式
+.tech-button {
+  background: linear-gradient(135deg, var(--g2g-gradient-start) 0%, var(--g2g-gradient-end) 100%);
+  border: none;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// 渐变文字
+.gradient-text {
+  background: linear-gradient(135deg, var(--g2g-gradient-start) 0%, var(--g2g-gradient-end) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// 发光效果
+.glow-effect {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--g2g-gradient-start), var(--g2g-gradient-end));
+    border-radius: inherit;
+    z-index: -1;
+    filter: blur(10px);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  
+  &:hover::after {
+    opacity: 0.8;
+  }
+}
+
+// 导出主题切换函数
+:export {
+  themes: $themes;
+}

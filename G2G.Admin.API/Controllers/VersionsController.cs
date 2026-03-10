@@ -23,9 +23,9 @@ public class VersionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var versions = await _versionService.GetAllAsync();
+        var versions = await _versionService.GetAllAsync(page, pageSize);
         return Ok(versions);
     }
 

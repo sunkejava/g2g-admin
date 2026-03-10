@@ -15,10 +15,23 @@ export interface Menu {
   icon?: string;
   parentId?: number;
   sort: number;
+  children?: Menu[];
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export const roleApi = {
   getAll: () => api.get<Role[]>('/roles'),
+  
+  getPage: (page: number = 1, pageSize: number = 10) => 
+    api.get<PagedResult<Role>>(`/roles?page=${page}&pageSize=${pageSize}`),
+  
   getById: (id: number) => api.get<Role>(`/roles/${id}`),
   create: (data: { name: string; description?: string }) => api.post<Role>('/roles', data),
   update: (id: number, data: { name?: string; description?: string }) => api.put<Role>(`/roles/${id}`, data),

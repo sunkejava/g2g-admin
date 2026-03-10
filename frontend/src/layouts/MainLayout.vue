@@ -37,6 +37,8 @@
       <el-header class="header">
         <div class="header-left">G2G 后台管理系统</div>
         <div class="header-right">
+          <ThemeSwitcher />
+          <el-icon :size="20"><User /></el-icon>
           <span>{{ user?.username }}</span>
           <el-button link type="danger" @click="handleLogout">退出</el-button>
         </div>
@@ -51,8 +53,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { UserFilled, Lock, Upload, Document, Setting, Monitor } from '@element-plus/icons-vue';
+import { UserFilled, Lock, Upload, Document, Setting, Monitor, User } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
 
 const route = useRoute();
 const router = useRouter();

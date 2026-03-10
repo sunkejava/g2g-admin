@@ -41,19 +41,29 @@ public class MonitorService : IMonitorService
     private readonly G2GDbContext _dbContext;
     private readonly ILogger<MonitorService> _logger;
     private static readonly Process _currentProcess = Process.GetCurrentProcess();
+    private static readonly PerformanceCounter _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+    private DateTime _lastCpuReadTime = DateTime.MinValue;
+    private double _lastCpuValue = 0;
 
     public MonitorService(G2GDbContext dbContext, ILogger<MonitorService> logger)
     {
         _dbContext = dbContext;
         _logger = logger;
+        
+        // 初始化 CPU 计数器
+        _cpuCounter.NextValue(); // 第一次调用返回 0，预热
     }
 
-    public Task<SystemInfoDto> GetSystemInfoAsync()
+    public async Task<SystemInfoDto> GetSystemInfoAsync()
     {
+        // 获取系统内存信息
         var totalMemory = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
         var usedMemory = GC.GetTotalMemory(false);
         
+        // 获取 CPU 使用率
         var cpuUsage = GetCpuUsage();
+        
+        // 获取磁盘信息
         var diskInfo = GetDiskInfo();
 
         var info = new SystemInfoDto
@@ -70,7 +80,7 @@ public class MonitorService : IMonitorService
             Uptime = _currentProcess.StartTime
         };
 
-        return Task.FromResult(info);
+        return info;
     }
 
     public async Task<HealthCheckDto> GetHealthCheckAsync()
@@ -110,13 +120,24 @@ public class MonitorService : IMonitorService
     {
         try
         {
-            _currentProcess.Refresh();
-            var cpuTime = _currentProcess.TotalProcessorTime.TotalMilliseconds;
-            var uptime = (DateTime.UtcNow - _currentProcess.StartTime.ToUniversalTime()).TotalMilliseconds;
-            return Math.Round(cpuTime / uptime * 100 / Environment.ProcessorCount, 2);
+            // 确保两次读取间隔至少 250ms
+            var now = DateTime.Now;
+            var timeSinceLastRead = (now - _lastCpuReadTime).TotalMilliseconds;
+            
+            if (timeSinceLastRead < 250)
+            {
+                return _lastCpuValue;
+            }
+            
+            _lastCpuReadTime = now;
+            _lastCpuValue = _cpuCounter.NextValue();
+            
+            // 限制最大值 100
+            return Math.Min(Math.Round(_lastCpuValue, 2), 100);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "获取 CPU 使用率失败");
             return 0;
         }
     }

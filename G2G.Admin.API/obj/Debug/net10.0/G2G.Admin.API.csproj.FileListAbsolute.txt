@@ -170,3 +170,4 @@
 /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API/obj/Debug/net10.0/G2G.Admin.API.pdb
 /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API/obj/Debug/net10.0/G2G.Admin.API.genruntimeconfig.cache
 /home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API/obj/Debug/net10.0/ref/G2G.Admin.API.dll
+/home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API/obj/Debug/net10.0/G2G.Admin.API.sourcelink.json

@@ -3,7 +3,14 @@
     <el-card>
       <div class="toolbar">
         <el-button type="primary" @click="handleAdd">新增用户</el-button>
-        <el-input v-model="keyword" placeholder="搜索用户名/邮箱" style="width: 200px; margin-left: 10px" clearable @clear="loadUsers" @keyup.enter="loadUsers" />
+        <el-input 
+          v-model="keyword" 
+          placeholder="搜索用户名/邮箱" 
+          style="width: 200px; margin-left: 10px" 
+          clearable 
+          @clear="loadUsers" 
+          @keyup.enter="loadUsers" 
+        />
         <el-button @click="loadUsers" style="margin-left: 10px">搜索</el-button>
       </div>
       <el-table :data="users" style="width: 100%" v-loading="loading">
@@ -29,6 +36,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="loadUsers"
+          @current-change="loadUsers"
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="500px">
@@ -72,14 +90,23 @@ const keyword = ref('');
 const dialogVisible = ref(false);
 const isEdit = ref(false);
 const formRef = ref();
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 const form = reactive({ id: 0, username: '', email: '', phone: '', password: '', roleIds: [] as number[] });
-const rules = { username: [{ required: true, message: '请输入用户名', trigger: 'blur' }], email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }], password: [{ required: true, message: '请输入密码', trigger: 'blur' }] };
+const rules = { 
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }], 
+  email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }], 
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }] 
+};
 
 const loadUsers = async () => {
   loading.value = true;
   try {
-    users.value = await userApi.getAll(1, 100);
+    const response = await userApi.getPage(currentPage.value, pageSize.value, keyword.value);
+    users.value = response.items || [];
+    total.value = response.total || 0;
   } catch (error) {
     ElMessage.error('加载用户列表失败');
   } finally {
@@ -166,5 +193,10 @@ onMounted(() => {
   margin-bottom: 20px;
   display: flex;
   align-items: center;
+}
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
