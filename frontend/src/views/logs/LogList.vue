@@ -16,6 +16,13 @@
           value-format="YYYY-MM-DD"
           @change="loadLogs" 
         />
+        <el-button 
+          :type="!dateRange ? 'primary' : 'default'" 
+          @click="clearDateFilter"
+          style="margin-left: 10px"
+        >
+          全部时间
+        </el-button>
         <el-input 
           v-model="keyword" 
           placeholder="搜索" 
@@ -26,6 +33,11 @@
         />
         <el-button @click="loadLogs" style="margin-left: 10px">搜索</el-button>
         <el-button type="success" @click="handleExport" style="margin-left: 10px">导出 Excel</el-button>
+      </div>
+      <div class="filter-tip" v-if="dateRange">
+        <el-icon><Filter /></el-icon>
+        <span>当前筛选：{{ dateRange[0] }} 至 {{ dateRange[1] }}（近 7 天数据）</span>
+        <el-button link type="primary" @click="clearDateFilter">清除筛选</el-button>
       </div>
       <el-table :data="logs" style="width: 100%" v-loading="loading">
         <el-table-column v-if="activeTab === 'operation'" prop="createdAt" label="时间" width="180" />
@@ -71,6 +83,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import { Filter } from '@element-plus/icons-vue';
 import api from '@/api/request';
 
 const activeTab = ref('operation');
@@ -121,6 +134,12 @@ const handleExport = async () => {
   ElMessage.success('导出中...');
 };
 
+const clearDateFilter = () => {
+  dateRange.value = null;
+  currentPage.value = 1;
+  loadLogs();
+};
+
 onMounted(() => {
   initDateRange();
   loadLogs();
@@ -132,6 +151,19 @@ onMounted(() => {
   margin: 20px 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.filter-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background: #f0f9eb;
+  border-radius: 4px;
+  color: #67c23a;
+  font-size: 14px;
+  margin-bottom: 15px;
 }
 .pagination-container {
   margin-top: 20px;

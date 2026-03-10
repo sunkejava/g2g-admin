@@ -28,8 +28,16 @@
       <el-col :span="6">
         <el-card shadow="hover">
           <div class="stat-card">
-            <div class="stat-title">日志总数</div>
+            <div class="stat-title">
+              日志总数
+              <el-tooltip content="所有时间的日志总数，日志管理页面默认显示近 7 天数据" placement="bottom">
+                <el-icon style="margin-left: 5px; cursor: help"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
             <div class="stat-value">{{ stats.totalOperationLogs + stats.totalLoginLogs + stats.totalSystemLogs }}</div>
+            <div class="stat-detail">
+              操作：{{ stats.totalOperationLogs }} | 系统：{{ stats.totalSystemLogs }} | 登录：{{ stats.totalLoginLogs }}
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -55,6 +63,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as echarts from 'echarts';
+import { QuestionFilled } from '@element-plus/icons-vue';
 import api from '@/api/request';
 
 const stats = ref({ totalUsers: 0, totalRoles: 0, totalVersions: 0, totalOperationLogs: 0, totalLoginLogs: 0, totalSystemLogs: 0 });
@@ -122,11 +131,20 @@ onMounted(() => {
   color: #909399;
   font-size: 14px;
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stat-value {
   color: #303133;
   font-size: 32px;
   font-weight: bold;
+}
+
+.stat-detail {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 8px;
 }
 </style>
