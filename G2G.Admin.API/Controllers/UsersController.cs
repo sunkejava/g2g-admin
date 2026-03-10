@@ -31,9 +31,9 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var user = await _userService.GetByIdAsync(id);
-        if (user == null) return NotFound();
-        return Ok(user);
+        var userDto = await _userService.GetByIdAsync(id);
+        if (userDto == null) return NotFound();
+        return Ok(userDto);
     }
 
     [HttpPost]
