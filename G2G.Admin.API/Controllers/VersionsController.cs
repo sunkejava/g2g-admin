@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using G2G.Admin.API.Services;
 using G2G.Admin.API.Entities;
+using G2G.Admin.API.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace G2G.Admin.API.Controllers;
