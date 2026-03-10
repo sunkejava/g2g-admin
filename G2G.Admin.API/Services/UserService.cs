@@ -160,11 +160,13 @@ public class UserService : IUserService
         entity.Phone = dto.Phone ?? entity.Phone;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        if (dto.RoleIds.Any())
-        {
-            var existingRoles = _dbContext.UserRoles.Where(ur => ur.UserId == id).ToList();
-            _dbContext.UserRoles.RemoveRange(existingRoles);
+        // 处理角色分配（支持空数组清空角色）
+        var existingRoles = _dbContext.UserRoles.Where(ur => ur.UserId == id).ToList();
+        _dbContext.UserRoles.RemoveRange(existingRoles);
 
+        // 如果有角色 ID，添加新角色
+        if (dto.RoleIds != null && dto.RoleIds.Any())
+        {
             foreach (var roleId in dto.RoleIds)
             {
                 _dbContext.UserRoles.Add(new UserRole { UserId = id, RoleId = roleId });

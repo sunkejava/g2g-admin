@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using G2G.Admin.API.Data;
 
 namespace G2G.Admin.API.Services;
@@ -40,7 +41,6 @@ public class MonitorService : IMonitorService
 {
     private readonly G2GDbContext _dbContext;
     private readonly ILogger<MonitorService> _logger;
-    private static readonly Process _currentProcess = Process.GetCurrentProcess();
     private DateTime _lastReadTime = DateTime.MinValue;
     private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
 
@@ -54,21 +54,16 @@ public class MonitorService : IMonitorService
     private void InitializeCpu()
     {
         _lastReadTime = DateTime.UtcNow;
-        _lastTotalProcessorTime = _currentProcess.TotalProcessorTime;
+        _lastTotalProcessorTime = Process.GetCurrentProcess().TotalProcessorTime;
     }
 
     public async Task<SystemInfoDto> GetSystemInfoAsync()
     {
-        // 获取系统内存信息（跨平台）
         var (totalMemory, usedMemory, memoryPercent) = GetSystemMemoryInfo();
-        
-        // 获取 CPU 使用率
         var cpuUsage = GetCpuUsage();
-        
-        // 获取磁盘信息
         var diskInfo = GetDiskInfo();
 
-        var info = new SystemInfoDto
+        return new SystemInfoDto
         {
             CpuUsage = cpuUsage,
             TotalMemory = totalMemory,
@@ -77,12 +72,10 @@ public class MonitorService : IMonitorService
             TotalDisk = diskInfo.Total,
             UsedDisk = diskInfo.Used,
             DiskUsagePercent = diskInfo.Total > 0 ? Math.Round((double)diskInfo.Used / diskInfo.Total * 100, 2) : 0,
-            OsVersion = Environment.OSVersion.ToString(),
+            OsVersion = GetOsVersion(),
             ProcessorCount = Environment.ProcessorCount,
             Uptime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64)
         };
-
-        return info;
     }
 
     public async Task<HealthCheckDto> GetHealthCheckAsync()
@@ -118,69 +111,253 @@ public class MonitorService : IMonitorService
         return result;
     }
 
+    /// <summary>
+    /// 跨平台获取系统内存信息
+    /// 支持：Windows, Linux, macOS, Unix
+    /// </summary>
     private (long total, long used, double percent) GetSystemMemoryInfo()
     {
         try
         {
-            // 在 Linux 上读取 /proc/meminfo
-            if (OperatingSystem.IsLinux())
+            // Linux: 读取 /proc/meminfo
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var meminfoPath = "/proc/meminfo";
-                if (File.Exists(meminfoPath))
-                {
-                    var lines = File.ReadAllLines(meminfoPath);
-                    long totalKb = 0, freeKb = 0, buffersKb = 0, cachedKb = 0;
-                    
-                    foreach (var line in lines)
-                    {
-                        var parts = line.Split(':');
-                        if (parts.Length != 2) continue;
-                        
-                        var key = parts[0].Trim();
-                        var valuePart = parts[1].Trim().Split(' ')[0];
-                        if (!long.TryParse(valuePart, out var value)) continue;
-                        
-                        switch (key)
-                        {
-                            case "MemTotal": totalKb = value; break;
-                            case "MemFree": freeKb = value; break;
-                            case "Buffers": buffersKb = value; break;
-                            case "Cached": cachedKb = value; break;
-                        }
-                    }
-                    
-                    if (totalKb > 0)
-                    {
-                        // 可用内存 = 空闲 + 缓冲区 + 缓存
-                        var availableKb = freeKb + buffersKb + cachedKb;
-                        var usedKb = totalKb - availableKb;
-                        var percentLinux = Math.Round((double)usedKb / totalKb * 100, 2);
-                        
-                        return (totalKb * 1024, usedKb * 1024, percentLinux);
-                    }
-                }
+                return GetLinuxMemoryInfo();
             }
             
-            // 在 Windows 上或使用回退方案
-            var totalMemoryFallback = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-            var usedMemoryFallback = GC.GetTotalMemory(false);
-            var percentFallback = totalMemoryFallback > 0 ? Math.Round((double)usedMemoryFallback / totalMemoryFallback * 100, 2) : 0;
+            // macOS: 使用 sysctl 命令
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return GetMacOSMemoryInfo();
+            }
             
-            return (totalMemoryFallback, usedMemoryFallback, percentFallback);
+            // Windows: 使用 PerformanceCounter 或 GC 信息
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return GetWindowsMemoryInfo();
+            }
+            
+            // 其他 Unix 系统：尝试通用方法
+            return GetUnixMemoryInfo();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "获取系统内存信息失败");
-            return (0, 0, 0);
+            _logger.LogWarning(ex, "获取系统内存信息失败，使用回退方案");
+            return GetFallbackMemoryInfo();
         }
     }
 
+    /// <summary>
+    /// Linux 内存信息（读取 /proc/meminfo）
+    /// </summary>
+    private (long total, long used, double percent) GetLinuxMemoryInfo()
+    {
+        var meminfoPath = "/proc/meminfo";
+        if (!File.Exists(meminfoPath))
+        {
+            return GetFallbackMemoryInfo();
+        }
+
+        var lines = File.ReadAllLines(meminfoPath);
+        var memInfo = new Dictionary<string, long>();
+        
+        foreach (var line in lines)
+        {
+            var parts = line.Split(':');
+            if (parts.Length != 2) continue;
+            
+            var key = parts[0].Trim();
+            var valuePart = parts[1].Trim().Split(' ')[0];
+            if (long.TryParse(valuePart, out var value))
+            {
+                memInfo[key] = value; // KB
+            }
+        }
+
+        if (memInfo.TryGetValue("MemTotal", out var totalKb))
+        {
+            var freeKb = memInfo.GetValueOrDefault("MemFree", 0);
+            var buffersKb = memInfo.GetValueOrDefault("Buffers", 0);
+            var cachedKb = memInfo.GetValueOrDefault("Cached", 0);
+            var availableKb = memInfo.GetValueOrDefault("MemAvailable", freeKb + buffersKb + cachedKb);
+            
+            var usedKb = totalKb - availableKb;
+            var percent = Math.Round((double)usedKb / totalKb * 100, 2);
+            
+            return (totalKb * 1024, usedKb * 1024, percent);
+        }
+
+        return GetFallbackMemoryInfo();
+    }
+
+    /// <summary>
+    /// macOS 内存信息（使用 sysctl 命令）
+    /// </summary>
+    private (long total, long used, double percent) GetMacOSMemoryInfo()
+    {
+        try
+        {
+            // 获取总内存
+            var totalMemory = ExecuteCommand("sysctl", "-n", "hw.memsize");
+            if (long.TryParse(totalMemory, out var total))
+            {
+                // 获取活跃内存（已使用）
+                var usedMemoryStr = ExecuteCommand("vm_stat");
+                var pageSize = 4096; // macOS 默认页大小
+                
+                // 解析 vm_stat 输出
+                var activePages = ParseVmStat(usedMemoryStr, "active");
+                var wiredPages = ParseVmStat(usedMemoryStr, "wired");
+                var compressedPages = ParseVmStat(usedMemoryStr, "compressed");
+                
+                var used = (activePages + wiredPages + compressedPages) * pageSize;
+                var percent = Math.Round((double)used / total * 100, 2);
+                
+                return (total, used, percent);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "获取 macOS 内存信息失败");
+        }
+
+        return GetFallbackMemoryInfo();
+    }
+
+    /// <summary>
+    /// Windows 内存信息
+    /// </summary>
+    private (long total, long used, double percent) GetWindowsMemoryInfo()
+    {
+        try
+        {
+            var gcInfo = GC.GetGCMemoryInfo();
+            var totalMemory = gcInfo.TotalAvailableMemoryBytes;
+            var usedMemory = GC.GetTotalMemory(false);
+            
+            // 更准确的 Windows 内存信息（使用 PerformanceCounter）
+            try
+            {
+                using var totalRamCounter = new PerformanceCounter("Memory", "Available Bytes");
+                var availableBytes = totalRamCounter.NextValue();
+                var totalBytes = totalMemory;
+                var usedBytes = totalBytes - availableBytes;
+                var percent = Math.Round((double)usedBytes / totalBytes * 100, 2);
+                
+                return (totalBytes, (long)usedBytes, percent);
+            }
+            catch
+            {
+                // PerformanceCounter 失败时使用 GC 信息
+                var percent = totalMemory > 0 ? Math.Round((double)usedMemory / totalMemory * 100, 2) : 0;
+                return (totalMemory, usedMemory, percent);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "获取 Windows 内存信息失败");
+            return GetFallbackMemoryInfo();
+        }
+    }
+
+    /// <summary>
+    /// 其他 Unix 系统内存信息
+    /// </summary>
+    private (long total, long used, double percent) GetUnixMemoryInfo()
+    {
+        try
+        {
+            // 尝试使用 free 命令（适用于大多数 Unix 系统）
+            var freeOutput = ExecuteCommand("free", "-b");
+            var lines = freeOutput.Split('\n');
+            
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("Mem:"))
+                {
+                    var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 3 && 
+                        long.TryParse(parts[1], out var total) && 
+                        long.TryParse(parts[2], out var used))
+                    {
+                        var percent = Math.Round((double)used / total * 100, 2);
+                        return (total, used, percent);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "获取 Unix 内存信息失败");
+        }
+
+        return GetFallbackMemoryInfo();
+    }
+
+    /// <summary>
+    /// 回退方案：使用 GC 信息
+    /// </summary>
+    private (long total, long used, double percent) GetFallbackMemoryInfo()
+    {
+        var gcInfo = GC.GetGCMemoryInfo();
+        var totalMemory = gcInfo.TotalAvailableMemoryBytes;
+        var usedMemory = GC.GetTotalMemory(false);
+        var percent = totalMemory > 0 ? Math.Round((double)usedMemory / totalMemory * 100, 2) : 0;
+        
+        return (totalMemory, usedMemory, percent);
+    }
+
+    /// <summary>
+    /// 执行 shell 命令
+    /// </summary>
+    private string ExecuteCommand(string command, params string[] args)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = command,
+            Arguments = string.Join(" ", args),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        var output = process?.StandardOutput.ReadToEnd() ?? "";
+        process?.WaitForExit(5000);
+        
+        return output.Trim();
+    }
+
+    /// <summary>
+    /// 解析 vm_stat 输出
+    /// </summary>
+    private long ParseVmStat(string output, string key)
+    {
+        foreach (var line in output.Split('\n'))
+        {
+            if (line.Contains(key + " pages", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = line.Split(':');
+                if (parts.Length == 2 && long.TryParse(parts[1].Trim(), out var pages))
+                {
+                    return pages;
+                }
+            }
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// 获取 CPU 使用率（跨平台）
+    /// </summary>
     private double GetCpuUsage()
     {
         try
         {
             var now = DateTime.UtcNow;
-            var currentTotalProcessorTime = _currentProcess.TotalProcessorTime;
+            var process = Process.GetCurrentProcess();
+            var currentTotalProcessorTime = process.TotalProcessorTime;
             var timeDiff = (now - _lastReadTime).TotalMilliseconds;
             var cpuDiff = (currentTotalProcessorTime - _lastTotalProcessorTime).TotalMilliseconds;
             
@@ -201,16 +378,62 @@ public class MonitorService : IMonitorService
         }
     }
 
+    /// <summary>
+    /// 获取磁盘信息（跨平台）
+    /// </summary>
     private (long Total, long Used) GetDiskInfo()
     {
         try
         {
-            var driveInfo = new DriveInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()) ?? "/");
+            var rootPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+                ? Path.GetPathRoot(Directory.GetCurrentDirectory()) 
+                : "/";
+            
+            var driveInfo = new DriveInfo(rootPath ?? "/");
             return (driveInfo.TotalSize, driveInfo.TotalSize - driveInfo.AvailableFreeSpace);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "获取磁盘信息失败");
+            return (0, 0);
+        }
+    }
+
+    /// <summary>
+    /// 获取操作系统版本（跨平台）
+    /// </summary>
+    private string GetOsVersion()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return $"Windows {Environment.OSVersion.VersionString}";
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var osRelease = "/etc/os-release";
+                if (File.Exists(osRelease))
+                {
+                    var lines = File.ReadAllLines(osRelease);
+                    var name = lines.FirstOrDefault(l => l.StartsWith("PRETTY_NAME="));
+                    if (name != null)
+                    {
+                        return name.Split('=')[1].Trim('"');
+                    }
+                }
+                return $"Linux {Environment.OSVersion.VersionString}";
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var version = ExecuteCommand("sw_vers", "-productVersion");
+                return $"macOS {version}";
+            }
+            return Environment.OSVersion.ToString();
         }
         catch
         {
-            return (0, 0);
+            return Environment.OSVersion.ToString();
         }
     }
 }

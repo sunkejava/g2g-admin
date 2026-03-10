@@ -32,8 +32,8 @@ const loading = ref(false);
 const formRef = ref();
 
 const form = reactive({
-  username: 'admin',
-  password: 'admin123'
+  username: '',
+  password: ''
 });
 
 const rules = {
@@ -67,7 +67,11 @@ const handleLogin = async () => {
     ElMessage.success('登录成功');
     router.push('/');
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '登录失败');
+    ElMessage({
+      message: error.response?.data?.message || '登录失败',
+      type: 'error',
+      duration: 2000 // 2 秒后自动关闭
+    });
   } finally {
     loading.value = false;
   }

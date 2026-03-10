@@ -103,6 +103,8 @@ public class UsersController : ControllerBase
             );
             
             // 返回 DTO 而非实体，避免循环引用
+            // 注意：user 是 User 实体，需要从数据库重新加载角色信息
+            var userWithRoles = await _userService.GetByIdAsync(id);
             var userDto = new UserDto
             {
                 Id = user.Id,
@@ -111,11 +113,7 @@ public class UsersController : ControllerBase
                 Phone = user.Phone,
                 Status = user.Status,
                 CreatedAt = user.CreatedAt,
-                Roles = user.UserRoles?.Select(ur => new RoleDto
-                {
-                    Id = ur.Role.Id,
-                    Name = ur.Role.Name
-                }).ToList() ?? new List<RoleDto>()
+                Roles = userWithRoles?.Roles ?? new List<RoleDto>()
             };
             
             return Ok(userDto);
