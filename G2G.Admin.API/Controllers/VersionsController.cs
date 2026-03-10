@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using G2G.Admin.API.Services;
 using G2G.Admin.API.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace G2G.Admin.API.Controllers;
 
@@ -15,13 +16,15 @@ public class VersionsController : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<VersionsController> _logger;
     private readonly LogHelper _logHelper;
+    private readonly G2GDbContext _dbContext;
 
-    public VersionsController(IVersionService versionService, IWebHostEnvironment environment, ILogger<VersionsController> logger, LogHelper logHelper)
+    public VersionsController(IVersionService versionService, IWebHostEnvironment environment, ILogger<VersionsController> logger, LogHelper logHelper, G2GDbContext dbContext)
     {
         _versionService = versionService;
         _environment = environment;
         _logger = logger;
         _logHelper = logHelper;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -203,6 +206,97 @@ public class VersionsController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// PC 客户端获取最新版本信息（需要登录）
+    /// </summary>
+    [HttpGet("upgrade/latest")]
+    public async Task<IActionResult> GetLatestVersion()
+    {
+        try
+        {
+            var currentVersion = await _versionService.GetCurrentVersionAsync();
+            
+            if (currentVersion == null)
+            {
+                return NotFound(new { message = "暂无版本信息" });
+            }
+
+            // 获取上一个版本作为对比（如果有）
+            var previousVersion = await _dbContext.Versions
+                .Where(v => v.Id != currentVersion.Id)
+                .OrderByDescending(v => v.UploadedAt)
+                .FirstOrDefaultAsync();
+
+            var response = new UpgradeResponse
+            {
+                VersionNo = currentVersion.VersionNo,
+                ReleaseNotes = currentVersion.ReleaseNotes,
+                FileSize = currentVersion.FileSize,
+                FileSizeMB = Math.Round(currentVersion.FileSize / 1024.0 / 1024.0, 2),
+                DownloadUrl = $"/api/versions/download/{currentVersion.Id}",
+                UploadedAt = currentVersion.UploadedAt,
+                HasPreviousVersion = previousVersion != null,
+                PreviousVersionNo = previousVersion?.VersionNo
+            };
+
+            _logger.LogInformation("客户端请求版本信息，返回最新版本：{VersionNo}", currentVersion.VersionNo);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取最新版本信息失败");
+            return StatusCode(500, new { message = "获取版本信息失败" });
+        }
+    }
+}
+
+/// <summary>
+/// 升级响应 DTO
+/// </summary>
+public class UpgradeResponse
+{
+    /// <summary>
+    /// 版本号
+    /// </summary>
+    public string VersionNo { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 更新说明
+    /// </summary>
+    public string ReleaseNotes { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 文件大小（字节）
+    /// </summary>
+    public long FileSize { get; set; }
+    
+    /// <summary>
+    /// 文件大小（MB）
+    /// </summary>
+    public double FileSizeMB { get; set; }
+    
+    /// <summary>
+    /// 下载地址（相对路径，需要带 Token）
+    /// </summary>
+    public string DownloadUrl { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 上传时间
+    /// </summary>
+    public DateTime UploadedAt { get; set; }
+    
+    /// <summary>
+    /// 是否有上一个版本
+    /// </summary>
+    public bool HasPreviousVersion { get; set; }
+    
+    /// <summary>
+    /// 上一个版本号
+    /// </summary>
+    public string? PreviousVersionNo { get; set; }
+}
 
     [HttpGet("download/{id}")]
     public async Task<IActionResult> Download(int id)

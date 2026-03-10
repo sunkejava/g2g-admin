@@ -104,12 +104,16 @@ public class AuthService : IAuthService
                 UserId = user.Id,
                 RoleId = commonUserRole.Id
             });
+            
+            // 立即保存
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("新用户 {Username} 已分配'普通用户'角色", request.Username);
+            _logger.LogInformation("新用户 {Username} (ID:{UserId}) 已分配'普通用户'角色 (ID:{RoleId})", 
+                request.Username, user.Id, commonUserRole.Id);
         }
         else
         {
-            _logger.LogWarning("未找到'普通用户'角色，请手动创建该角色");
+            _logger.LogWarning("未找到'普通用户'角色，请检查数据初始化。当前角色：{Roles}", 
+                string.Join(", ", await _dbContext.Roles.Select(r => r.Name).ToListAsync()));
         }
 
         return user;

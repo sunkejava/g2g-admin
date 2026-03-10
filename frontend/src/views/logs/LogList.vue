@@ -40,14 +40,18 @@
         <el-button link type="primary" @click="clearDateFilter">清除筛选</el-button>
       </div>
       <el-table :data="logs" style="width: 100%" v-loading="loading">
-        <el-table-column v-if="activeTab === 'operation'" prop="createdAt" label="时间" width="180" />
+        <el-table-column v-if="activeTab === 'operation'" prop="createdAt" label="时间" width="200">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column v-if="activeTab === 'operation'" prop="userId" label="用户 ID" width="80" />
         <el-table-column v-if="activeTab === 'operation'" prop="action" label="操作" />
         <el-table-column v-if="activeTab === 'operation'" prop="module" label="模块" />
         <el-table-column v-if="activeTab === 'operation'" prop="details" label="详情" show-overflow-tooltip />
         <el-table-column v-if="activeTab === 'operation'" prop="ip" label="IP" width="140" />
 
-        <el-table-column v-if="activeTab === 'system'" prop="createdAt" label="时间" width="180" />
+        <el-table-column v-if="activeTab === 'system'" prop="createdAt" label="时间" width="200">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column v-if="activeTab === 'system'" prop="level" label="级别" width="80">
           <template #default="{ row }">
             <el-tag :type="row.level === 'Error' ? 'danger' : 'warning'">{{ row.level }}</el-tag>
@@ -56,7 +60,9 @@
         <el-table-column v-if="activeTab === 'system'" prop="source" label="来源" />
         <el-table-column v-if="activeTab === 'system'" prop="message" label="消息" show-overflow-tooltip />
 
-        <el-table-column v-if="activeTab === 'login'" prop="createdAt" label="时间" width="180" />
+        <el-table-column v-if="activeTab === 'login'" prop="createdAt" label="时间" width="200">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column v-if="activeTab === 'login'" prop="username" label="用户名" />
         <el-table-column v-if="activeTab === 'login'" prop="success" label="结果" width="80">
           <template #default="{ row }">
@@ -151,6 +157,21 @@ const clearDateFilter = () => {
   dateRange.value = null;
   currentPage.value = 1;
   loadLogs();
+};
+
+// 格式化时间为 yyyy-MM-dd HH:mm:ss fff
+const formatDateTime = (dateTime: string) => {
+  if (!dateTime) return '';
+  const date = new Date(dateTime);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${milliseconds}`;
 };
 
 onMounted(() => {

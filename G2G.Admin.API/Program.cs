@@ -32,6 +32,7 @@ builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<ISettingService, SettingService>();
 builder.Services.AddScoped<IMonitorService, MonitorService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDataInitializationService, DataInitializationService>();
 builder.Services.AddMemoryCache();
 
 // 配置 DbContext
@@ -77,11 +78,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 确保数据库已创建
+// 确保数据库已创建并初始化数据
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<G2GDbContext>();
     dbContext.Database.EnsureCreated();
+    
+    var initializationService = scope.ServiceProvider.GetRequiredService<IDataInitializationService>();
+    await initializationService.InitializeAsync();
 }
 
 // Configure the HTTP request pipeline.
