@@ -198,20 +198,32 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.toolbar {
-  margin-bottom: 20px;
+@import '../common-styles.css';
+
+.role-list {
+  animation: fadeIn 0.4s ease-out;
 }
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
+
 .permission-content {
   padding: 10px 0;
 }
+
 .permission-tip {
   color: #909399;
   margin-bottom: 15px;
   font-size: 14px;
+  padding: 8px 12px;
+  background: rgba(64, 158, 255, 0.05);
+  border-radius: 6px;
+  border-left: 3px solid #409eff;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

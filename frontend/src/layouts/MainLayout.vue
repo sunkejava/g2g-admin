@@ -130,43 +130,58 @@ onMounted(() => {
 <style scoped>
 .layout {
   height: 100vh;
+  overflow: hidden;
 }
 
 .aside {
-  background-color: #304156;
+  background: linear-gradient(180deg, #1a1c2e 0%, #2d3142 100%);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
 }
 
 .logo {
-  height: 60px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  background-color: #2b3a4b;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  letter-spacing: 2px;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
-  padding: 0 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 0 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.header-left {
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .main {
-  background-color: #f0f2f5;
-  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecff 100%);
+  padding: 24px;
   position: relative;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
 }
 
 .copyright {
@@ -178,9 +193,27 @@ onMounted(() => {
   color: #909399;
   font-size: 12px;
   padding: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  margin: 0 24px;
 }
 
 .copyright p {
   margin: 0;
+  letter-spacing: 0.5px;
+}
+
+/* 侧边栏菜单项动画 */
+:deep(.el-menu-item) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-menu-item:hover) {
+  transform: translateX(4px);
+}
+
+:deep(.el-menu-item.is-active) {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 </style>

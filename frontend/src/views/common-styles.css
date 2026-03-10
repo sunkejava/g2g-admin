@@ -1,0 +1,168 @@
+/* 通用列表页面样式 */
+
+.toolbar {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1) 0%, rgba(0, 206, 201, 0.1) 100%);
+  border-radius: 8px;
+  color: #67c23a;
+  font-size: 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(103, 194, 58, 0.2);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pagination-container {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* 表格行动画 */
+:deep(.el-table__row) {
+  animation: rowFadeIn 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+:deep(.el-table__row:nth-child(1)) {
+  animation-delay: 0.05s;
+}
+
+:deep(.el-table__row:nth-child(2)) {
+  animation-delay: 0.1s;
+}
+
+:deep(.el-table__row:nth-child(3)) {
+  animation-delay: 0.15s;
+}
+
+:deep(.el-table__row:nth-child(4)) {
+  animation-delay: 0.2s;
+}
+
+:deep(.el-table__row:nth-child(5)) {
+  animation-delay: 0.25s;
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 对话框动画 */
+:deep(.el-dialog) {
+  animation: dialogScaleIn 0.3s ease-out;
+}
+
+@keyframes dialogScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 按钮组样式 */
+:deep(.el-button + .el-button) {
+  margin-left: 8px;
+}
+
+/* 标签动画 */
+:deep(.el-tag) {
+  animation: tagPop 0.3s ease-out;
+}
+
+@keyframes tagPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 卡片头部优化 */
+:deep(.el-card__header) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 16px 20px;
+}
+
+:deep(.el-card__header .card-header) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #303133;
+}
+
+/* 加载状态优化 */
+:deep(.el-table__empty-block) {
+  padding: 60px 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: #909399;
+  font-size: 14px;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .toolbar .el-button,
+  .toolbar .el-input {
+    width: 100%;
+  }
+  
+  .pagination-container {
+    justify-content: center;
+  }
+}

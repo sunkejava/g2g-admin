@@ -211,12 +211,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.toolbar {
-  margin-bottom: 20px;
+@import '../common-styles.css';
+
+.version-list {
+  animation: fadeIn 0.4s ease-out;
 }
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

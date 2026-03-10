@@ -160,27 +160,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.toolbar {
-  margin: 20px 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+@import '../common-styles.css';
+
+.log-list {
+  animation: fadeIn 0.4s ease-out;
 }
-.filter-tip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 15px;
-  background: #f0f9eb;
-  border-radius: 4px;
-  color: #67c23a;
-  font-size: 14px;
-  margin-bottom: 15px;
-}
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>
