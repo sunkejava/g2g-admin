@@ -49,3 +49,6 @@ export const menuApi = {
   getTree: () => api.get<Menu[]>('/menus/tree'),
   getMyMenus: () => api.get<Menu[]>('/menus/my'),
 };
+
+// 重新导出，方便 Login.vue 使用
+export { menuApi };

@@ -1,22 +1,18 @@
 import api from './request';
 
-export interface LoginParams {
-  username: string;
-  password: string;
-}
-
-export interface UserInfo {
-  id: number;
-  username: string;
-  email: string;
-}
-
 export interface LoginResponse {
   token: string;
-  user: UserInfo;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    roles: { id: number; name: string }[];
+  };
 }
 
 export const authApi = {
-  login: (data: LoginParams) => api.post<LoginResponse>('/auth/login', data),
-  logout: () => api.post('/auth/logout'),
+  login: (username: string, password: string) => 
+    api.post<LoginResponse>('/auth/login', { username, password }),
+  
+  logout: () => api.post('/auth/logout', {}),
 };

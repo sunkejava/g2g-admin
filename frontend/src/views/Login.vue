@@ -2,22 +2,20 @@
   <div class="login-container">
     <el-card class="login-card">
       <h2 class="login-title">G2G 后台管理系统</h2>
-      <el-form :model="form" :rules="rules" ref="formRef" size="large">
+      <el-form :model="form" :rules="rules" ref="formRef" @keyup.enter="handleLogin">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="handleLogin" style="width: 100%">登录</el-button>
-        </el-form-item>
-        <el-form-item>
-          <div class="register-link">
-            没有账号？<el-link type="primary" @click="goToRegister">立即注册</el-link>
-          </div>
+          <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">登录</el-button>
         </el-form-item>
       </el-form>
+      <div class="login-footer">
+        <el-link type="primary" @click="$router.push('/register')">注册账号</el-link>
+      </div>
     </el-card>
   </div>
 </template>
@@ -27,24 +25,20 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { authApi } from '@/api/auth';
+import { menuApi } from '@/api/role';
 
 const router = useRouter();
-
-const formRef = ref();
 const loading = ref(false);
+const formRef = ref();
 
 const form = reactive({
   username: 'admin',
-  password: 'admin123',
+  password: 'admin123'
 });
-
-const goToRegister = () => {
-  router.push('/register');
-};
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 };
 
 const handleLogin = async () => {
@@ -52,9 +46,24 @@ const handleLogin = async () => {
   loading.value = true;
   
   try {
-    const res = await authApi.login(form);
-    localStorage.setItem('token', res.token);
-    localStorage.setItem('user', JSON.stringify(res.user));
+    // 登录
+    const result = await authApi.login(form.username, form.password);
+    
+    // 保存 token 和用户信息
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    
+    // 获取用户菜单权限
+    try {
+      const menus = await menuApi.getMyMenus();
+      localStorage.setItem('userMenus', JSON.stringify(menus));
+      console.log('用户菜单权限:', menus);
+    } catch (error) {
+      console.error('获取菜单权限失败:', error);
+      // 如果获取失败，给一个默认的空数组
+      localStorage.setItem('userMenus', '[]');
+    }
+    
     ElMessage.success('登录成功');
     router.push('/');
   } catch (error: any) {
@@ -70,7 +79,7 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
@@ -82,11 +91,12 @@ const handleLogin = async () => {
 .login-title {
   text-align: center;
   margin-bottom: 30px;
-  color: #333;
+  color: #303133;
+  font-size: 24px;
 }
 
-.register-link {
+.login-footer {
   text-align: center;
-  width: 100%;
+  margin-top: 15px;
 }
 </style>
