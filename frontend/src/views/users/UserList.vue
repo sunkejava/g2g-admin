@@ -167,24 +167,6 @@ const handleEdit = async (row: any) => {
   dialogVisible.value = true;
 };
 
-const handleEdit = (row: any) => {
-  isEdit.value = true;
-  // 确保角色 ID 正确提取，处理可能的 null/undefined 情况
-  const roleIds = row.roles && Array.isArray(row.roles) 
-    ? row.roles.map((r: any) => Number(r.id)) 
-    : [];
-  
-  Object.assign(form, { 
-    id: row.id, 
-    username: row.username, 
-    email: row.email, 
-    phone: row.phone, 
-    password: '', 
-    roleIds: roleIds 
-  });
-  dialogVisible.value = true;
-};
-
 const handleSubmit = async () => {
   await formRef.value.validate();
   try {
