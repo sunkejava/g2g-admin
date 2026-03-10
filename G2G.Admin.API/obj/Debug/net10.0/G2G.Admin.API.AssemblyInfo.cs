@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("G2G.Admin.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+455b9da7ae1aca314034e53dc1b2f88d534fda66")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2cf7d6c8bba0cd1550db9cf9da2b95a48ef497b8")]
 [assembly: System.Reflection.AssemblyProductAttribute("G2G.Admin.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("G2G.Admin.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

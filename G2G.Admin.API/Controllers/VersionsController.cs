@@ -250,6 +250,25 @@ public class VersionsController : ControllerBase
             return StatusCode(500, new { message = "获取版本信息失败" });
         }
     }
+
+    [HttpGet("download/{id}")]
+    public async Task<IActionResult> Download(int id)
+    {
+        var version = await _versionService.GetByIdAsync(id);
+        if (version == null) return NotFound();
+
+        var fullPath = Path.Combine(_environment.ContentRootPath, version.FilePath);
+        if (!System.IO.File.Exists(fullPath)) return NotFound();
+
+        // 记录下载日志
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = userIdClaim != null && int.TryParse(userIdClaim.Value, out var uid) ? uid : 0;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
+        
+        _logger.LogInformation("用户 {Username} (ID={UserId}) 下载版本 {VersionNo}", username, userId, version.VersionNo);
+
+        return PhysicalFile(fullPath, "application/octet-stream", $"{version.VersionNo}.zip");
+    }
 }
 
 /// <summary>
@@ -296,24 +315,4 @@ public class UpgradeResponse
     /// 上一个版本号
     /// </summary>
     public string? PreviousVersionNo { get; set; }
-}
-
-    [HttpGet("download/{id}")]
-    public async Task<IActionResult> Download(int id)
-    {
-        var version = await _versionService.GetByIdAsync(id);
-        if (version == null) return NotFound();
-
-        var fullPath = Path.Combine(_environment.ContentRootPath, version.FilePath);
-        if (!System.IO.File.Exists(fullPath)) return NotFound();
-
-        // 记录下载日志
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        var userId = userIdClaim != null && int.TryParse(userIdClaim.Value, out var uid) ? uid : 0;
-        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
-        
-        _logger.LogInformation("用户 {Username} (ID={UserId}) 下载版本 {VersionNo}", username, userId, version.VersionNo);
-
-        return PhysicalFile(fullPath, "application/octet-stream", $"{version.VersionNo}.zip");
-    }
 }
