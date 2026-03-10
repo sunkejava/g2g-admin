@@ -57,7 +57,19 @@ public class UsersController : ControllerBase
                 $"用户 {dto.Username} 创建成功"
             );
             
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+            // 返回 DTO 而非实体，避免循环引用
+            var userDto = new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Phone = user.Phone,
+                Status = user.Status,
+                CreatedAt = user.CreatedAt,
+                Roles = new List<RoleDto>() // 新用户角色会在创建后分配，这里先返回空
+            };
+            
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, userDto);
         }
         catch (Exception ex)
         {
