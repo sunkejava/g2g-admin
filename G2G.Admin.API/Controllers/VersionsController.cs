@@ -14,12 +14,14 @@ public class VersionsController : ControllerBase
     private readonly IVersionService _versionService;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<VersionsController> _logger;
+    private readonly LogHelper _logHelper;
 
-    public VersionsController(IVersionService versionService, IWebHostEnvironment environment, ILogger<VersionsController> logger)
+    public VersionsController(IVersionService versionService, IWebHostEnvironment environment, ILogger<VersionsController> logger, LogHelper logHelper)
     {
         _versionService = versionService;
         _environment = environment;
         _logger = logger;
+        _logHelper = logHelper;
     }
 
     [HttpGet]
