@@ -42,7 +42,7 @@ public class MonitorService : IMonitorService
     private readonly ILogger<MonitorService> _logger;
     private static readonly Process _currentProcess = Process.GetCurrentProcess();
     private DateTime _lastReadTime = DateTime.MinValue;
-    private long _lastCpuTicks = 0;
+    private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
 
     public MonitorService(G2GDbContext dbContext, ILogger<MonitorService> logger)
     {
@@ -54,14 +54,18 @@ public class MonitorService : IMonitorService
     private void InitializeCpu()
     {
         _lastReadTime = DateTime.UtcNow;
-        _lastCpuTicks = _currentProcess.TotalProcessorTime.Ticks;
+        _lastTotalProcessorTime = _currentProcess.TotalProcessorTime;
     }
 
     public async Task<SystemInfoDto> GetSystemInfoAsync()
     {
-        var totalMemory = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-        var usedMemory = GC.GetTotalMemory(false);
+        // 获取系统内存信息（跨平台）
+        var (totalMemory, usedMemory, memoryPercent) = GetSystemMemoryInfo();
+        
+        // 获取 CPU 使用率
         var cpuUsage = GetCpuUsage();
+        
+        // 获取磁盘信息
         var diskInfo = GetDiskInfo();
 
         var info = new SystemInfoDto
@@ -69,10 +73,10 @@ public class MonitorService : IMonitorService
             CpuUsage = cpuUsage,
             TotalMemory = totalMemory,
             UsedMemory = usedMemory,
-            MemoryUsagePercent = Math.Round((double)usedMemory / totalMemory * 100, 2),
+            MemoryUsagePercent = memoryPercent,
             TotalDisk = diskInfo.Total,
             UsedDisk = diskInfo.Used,
-            DiskUsagePercent = Math.Round((double)diskInfo.Used / diskInfo.Total * 100, 2),
+            DiskUsagePercent = diskInfo.Total > 0 ? Math.Round((double)diskInfo.Used / diskInfo.Total * 100, 2) : 0,
             OsVersion = Environment.OSVersion.ToString(),
             ProcessorCount = Environment.ProcessorCount,
             Uptime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64)
@@ -98,7 +102,7 @@ public class MonitorService : IMonitorService
         }
 
         var diskInfo = GetDiskInfo();
-        var diskPercent = (double)diskInfo.Used / diskInfo.Total * 100;
+        var diskPercent = diskInfo.Total > 0 ? (double)diskInfo.Used / diskInfo.Total * 100 : 0;
         result.Services["Disk"] = new ServiceHealth 
         { 
             IsHealthy = diskPercent < 90, 
@@ -114,22 +118,79 @@ public class MonitorService : IMonitorService
         return result;
     }
 
+    private (long total, long used, double percent) GetSystemMemoryInfo()
+    {
+        try
+        {
+            // 在 Linux 上读取 /proc/meminfo
+            if (OperatingSystem.IsLinux())
+            {
+                var meminfoPath = "/proc/meminfo";
+                if (File.Exists(meminfoPath))
+                {
+                    var lines = File.ReadAllLines(meminfoPath);
+                    long totalKb = 0, freeKb = 0, buffersKb = 0, cachedKb = 0;
+                    
+                    foreach (var line in lines)
+                    {
+                        var parts = line.Split(':');
+                        if (parts.Length != 2) continue;
+                        
+                        var key = parts[0].Trim();
+                        var valuePart = parts[1].Trim().Split(' ')[0];
+                        if (!long.TryParse(valuePart, out var value)) continue;
+                        
+                        switch (key)
+                        {
+                            case "MemTotal": totalKb = value; break;
+                            case "MemFree": freeKb = value; break;
+                            case "Buffers": buffersKb = value; break;
+                            case "Cached": cachedKb = value; break;
+                        }
+                    }
+                    
+                    if (totalKb > 0)
+                    {
+                        // 可用内存 = 空闲 + 缓冲区 + 缓存
+                        var availableKb = freeKb + buffersKb + cachedKb;
+                        var usedKb = totalKb - availableKb;
+                        var percent = Math.Round((double)usedKb / totalKb * 100, 2);
+                        
+                        return (totalKb * 1024, usedKb * 1024, percent);
+                    }
+                }
+            }
+            
+            // 在 Windows 上或使用回退方案
+            var totalMemory = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+            var usedMemory = GC.GetTotalMemory(false);
+            var percent = totalMemory > 0 ? Math.Round((double)usedMemory / totalMemory * 100, 2) : 0;
+            
+            return (totalMemory, usedMemory, percent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "获取系统内存信息失败");
+            return (0, 0, 0);
+        }
+    }
+
     private double GetCpuUsage()
     {
         try
         {
             var now = DateTime.UtcNow;
-            var currentCpuTicks = _currentProcess.TotalProcessorTime.Ticks;
-            var timeDiff = (now - _lastReadTime).Ticks;
-            var cpuDiff = currentCpuTicks - _lastCpuTicks;
+            var currentTotalProcessorTime = _currentProcess.TotalProcessorTime;
+            var timeDiff = (now - _lastReadTime).TotalMilliseconds;
+            var cpuDiff = (currentTotalProcessorTime - _lastTotalProcessorTime).TotalMilliseconds;
             
             if (timeDiff <= 0) return 0;
             
             // 计算 CPU 使用率（考虑多核）
-            var cpuUsage = (double)cpuDiff / timeDiff * 100 / Environment.ProcessorCount;
+            var cpuUsage = cpuDiff / timeDiff * 100 / Environment.ProcessorCount;
             
             _lastReadTime = now;
-            _lastCpuTicks = currentCpuTicks;
+            _lastTotalProcessorTime = currentTotalProcessorTime;
             
             return Math.Min(Math.Round(cpuUsage, 2), 100);
         }
@@ -144,7 +205,7 @@ public class MonitorService : IMonitorService
     {
         try
         {
-            var driveInfo = new DriveInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()));
+            var driveInfo = new DriveInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()) ?? "/");
             return (driveInfo.TotalSize, driveInfo.TotalSize - driveInfo.AvailableFreeSpace);
         }
         catch

@@ -6,14 +6,31 @@ namespace G2G.Admin.API.Services;
 
 public interface IUserService
 {
-    Task<PagedResult<User>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null);
-    Task<User?> GetByIdAsync(int id);
+    Task<PagedResult<UserDto>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null);
+    Task<UserDto?> GetByIdAsync(int id);
     Task<User?> GetByUsernameAsync(string username);
     Task<User> CreateAsync(CreateUserDto dto);
     Task<User?> UpdateAsync(int id, UpdateUserDto dto);
     Task<bool> DeleteAsync(int id);
     Task<bool> ResetPasswordAsync(int id, string newPassword);
     Task<bool> ToggleStatusAsync(int id);
+}
+
+public class UserDto
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public bool Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public List<RoleDto> Roles { get; set; } = new();
+}
+
+public class RoleDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
 public class CreateUserDto
@@ -41,7 +58,7 @@ public class UserService : IUserService
         _dbContext = dbContext;
     }
 
-    public async Task<PagedResult<User>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null)
+    public async Task<PagedResult<UserDto>> GetAllAsync(int page = 1, int pageSize = 10, string? keyword = null)
     {
         var query = _dbContext.Users.AsQueryable();
         
@@ -51,22 +68,54 @@ public class UserService : IUserService
         }
         
         var total = await query.CountAsync();
-        var items = await query
+        var users = await query
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
         
-        return new PagedResult<User> { Items = items, Total = total, Page = page, PageSize = pageSize };
+        var items = users.Select(u => new UserDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Email = u.Email,
+            Phone = u.Phone,
+            Status = u.Status,
+            CreatedAt = u.CreatedAt,
+            Roles = u.UserRoles.Select(ur => new RoleDto
+            {
+                Id = ur.Role.Id,
+                Name = ur.Role.Name
+            }).ToList()
+        }).ToList();
+        
+        return new PagedResult<UserDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
-    public async Task<User?> GetByIdAsync(int id)
+    public async Task<UserDto?> GetByIdAsync(int id)
     {
-        return await _dbContext.Users
+        var user = await _dbContext.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
+            
+        if (user == null) return null;
+        
+        return new UserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            Phone = user.Phone,
+            Status = user.Status,
+            CreatedAt = user.CreatedAt,
+            Roles = user.UserRoles.Select(ur => new RoleDto
+            {
+                Id = ur.Role.Id,
+                Name = ur.Role.Name
+            }).ToList()
+        };
     }
 
     public async Task<User?> GetByUsernameAsync(string username)
@@ -104,9 +153,12 @@ public class UserService : IUserService
         var user = await GetByIdAsync(id);
         if (user == null) return null;
 
-        user.Email = dto.Email ?? user.Email;
-        user.Phone = dto.Phone ?? user.Phone;
-        user.UpdatedAt = DateTime.UtcNow;
+        var entity = await _dbContext.Users.FindAsync(id);
+        if (entity == null) return null;
+        
+        entity.Email = dto.Email ?? entity.Email;
+        entity.Phone = dto.Phone ?? entity.Phone;
+        entity.UpdatedAt = DateTime.UtcNow;
 
         if (dto.RoleIds.Any())
         {
@@ -120,7 +172,7 @@ public class UserService : IUserService
         }
 
         await _dbContext.SaveChangesAsync();
-        return user;
+        return entity;
     }
 
     public async Task<bool> DeleteAsync(int id)
