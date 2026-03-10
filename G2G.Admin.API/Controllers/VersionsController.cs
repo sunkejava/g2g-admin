@@ -77,6 +77,20 @@ public class VersionsController : ControllerBase
                     var dto = new UploadVersionDto { VersionNo = versionNo, ReleaseNotes = releaseNotes };
                     var version = await _versionService.UploadAsync(dto, filePath, fileHash, file.Length, uploadedBy);
 
+                    // 记录操作日志
+                    await _logHelper.LogOperationAsync(
+                        $"上传版本：{versionNo}",
+                        "版本管理",
+                        $"文件大小：{file.Length} bytes, Hash: {fileHash}"
+                    );
+                    
+                    // 记录系统日志
+                    await _logHelper.LogSystemAsync(
+                        "Information",
+                        "VersionsController",
+                        $"版本 {versionNo} 上传成功，文件大小：{file.Length / 1024.0:F2} KB"
+                    );
+
                     _logger.LogInformation("版本上传成功：{VersionNo}", versionNo);
                     return Ok(version);
                 }
@@ -85,6 +99,15 @@ public class VersionsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "版本上传失败");
+            
+            // 记录系统错误日志
+            await _logHelper.LogSystemAsync(
+                "Error",
+                "VersionsController",
+                $"上传版本 {versionNo} 失败：{ex.Message}",
+                ex.StackTrace
+            );
+            
             return StatusCode(500, new { message = "上传失败" });
         }
     }
@@ -92,17 +115,66 @@ public class VersionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _versionService.DeleteAsync(id);
-        if (!result) return NotFound(new { message = "无法删除当前版本" });
-        return Ok(new { message = "删除成功" });
+        try
+        {
+            var result = await _versionService.DeleteAsync(id);
+            if (!result) return NotFound(new { message = "无法删除当前版本" });
+            
+            // 记录操作日志
+            await _logHelper.LogOperationAsync(
+                $"删除版本 (ID:{id})",
+                "版本管理",
+                $"版本 ID: {id}"
+            );
+            
+            return Ok(new { message = "删除成功" });
+        }
+        catch (Exception ex)
+        {
+            await _logHelper.LogSystemAsync(
+                "Error",
+                "VersionsController",
+                $"删除版本 ID:{id} 失败：{ex.Message}",
+                ex.StackTrace
+            );
+            throw;
+        }
     }
 
     [HttpPost("{id}/rollback")]
     public async Task<IActionResult> Rollback(int id)
     {
-        var result = await _versionService.RollbackAsync(id);
-        if (!result) return NotFound();
-        return Ok(new { message = "回滚成功" });
+        try
+        {
+            var result = await _versionService.RollbackAsync(id);
+            if (!result) return NotFound();
+            
+            // 记录操作日志
+            await _logHelper.LogOperationAsync(
+                $"回滚版本 (ID:{id})",
+                "版本管理",
+                $"版本 ID: {id}"
+            );
+            
+            // 记录系统日志
+            await _logHelper.LogSystemAsync(
+                "Warning",
+                "VersionsController",
+                $"系统已回滚到版本 ID:{id}"
+            );
+            
+            return Ok(new { message = "回滚成功" });
+        }
+        catch (Exception ex)
+        {
+            await _logHelper.LogSystemAsync(
+                "Error",
+                "VersionsController",
+                $"回滚版本 ID:{id} 失败：{ex.Message}",
+                ex.StackTrace
+            );
+            throw;
+        }
     }
 
     [HttpGet("check/{currentVersion}")]

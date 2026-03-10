@@ -13,14 +13,14 @@ namespace G2G.Admin.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly G2GDbContext _dbContext;
     private readonly ILogger<AuthController> _logger;
+    private readonly LogHelper _logHelper;
 
-    public AuthController(IAuthService authService, G2GDbContext dbContext, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger, LogHelper logHelper)
     {
         _authService = authService;
-        _dbContext = dbContext;
         _logger = logger;
+        _logHelper = logHelper;
     }
 
     [HttpPost("login")]
@@ -32,26 +32,8 @@ public class AuthController : ControllerBase
 
         var result = await _authService.LoginAsync(request, ip, userAgent);
 
-        var loginLog = new LoginLog
-        {
-            Username = request.Username,
-            Success = result != null,
-            Ip = ip,
-            UserAgent = userAgent
-        };
-
-        if (result != null)
-        {
-            loginLog.UserId = result.User.Id;
-            _logger.LogInformation("用户登录成功：{Username}", request.Username);
-        }
-        else
-        {
-            _logger.LogWarning("用户登录失败：{Username}", request.Username);
-        }
-
-        _dbContext.LoginLogs.Add(loginLog);
-        await _dbContext.SaveChangesAsync();
+        // 使用 LogHelper 记录登录日志
+        await _logHelper.LogLoginAsync(request.Username, result != null, ip, userAgent);
 
         if (result == null)
         {
@@ -70,12 +52,33 @@ public class AuthController : ControllerBase
             var ip = GetClientIp();
             var result = await _authService.RegisterAsync(request, ip);
             
-            _logger.LogInformation("用户注册成功：{Username}", request.Username);
+            // 记录操作日志
+            await _logHelper.LogOperationAsync(
+                $"用户注册：{request.Username}",
+                "认证管理",
+                $"邮箱：{request.Email}, IP: {ip}"
+            );
+            
+            // 记录系统日志
+            await _logHelper.LogSystemAsync(
+                "Information",
+                "AuthController",
+                $"新用户注册：{request.Username}"
+            );
+            
             return Ok(new { message = "注册成功，请登录" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "用户注册失败：{Username}", request.Username);
+            
+            // 记录系统错误日志
+            await _logHelper.LogSystemAsync(
+                "Warning",
+                "AuthController",
+                $"用户注册失败：{request.Username}, 错误：{ex.Message}"
+            );
+            
             return BadRequest(new { message = "注册失败，用户名或邮箱可能已存在" });
         }
     }
