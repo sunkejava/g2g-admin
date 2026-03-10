@@ -139,31 +139,81 @@ const loadRoles = async () => {
   }
 };
 
-const handleAdd = () => {
+const handleAdd = async () => {
   isEdit.value = false;
+  // 新增用户前重新加载角色列表，确保数据最新
+  await loadRoles();
   Object.assign(form, { id: 0, username: '', email: '', phone: '', password: '', roleIds: [] });
+  dialogVisible.value = true;
+};
+
+const handleEdit = async (row: any) => {
+  isEdit.value = true;
+  // 编辑用户前重新加载角色列表，确保数据最新
+  await loadRoles();
+  // 确保角色 ID 正确提取，处理可能的 null/undefined 情况
+  const roleIds = row.roles && Array.isArray(row.roles) 
+    ? row.roles.map((r: any) => Number(r.id)) 
+    : [];
+  
+  Object.assign(form, { 
+    id: row.id, 
+    username: row.username, 
+    email: row.email, 
+    phone: row.phone, 
+    password: '', 
+    roleIds: roleIds 
+  });
   dialogVisible.value = true;
 };
 
 const handleEdit = (row: any) => {
   isEdit.value = true;
-  Object.assign(form, { id: row.id, username: row.username, email: row.email, phone: row.phone, password: '', roleIds: row.roles?.map((r: any) => r.id) || [] });
+  // 确保角色 ID 正确提取，处理可能的 null/undefined 情况
+  const roleIds = row.roles && Array.isArray(row.roles) 
+    ? row.roles.map((r: any) => Number(r.id)) 
+    : [];
+  
+  Object.assign(form, { 
+    id: row.id, 
+    username: row.username, 
+    email: row.email, 
+    phone: row.phone, 
+    password: '', 
+    roleIds: roleIds 
+  });
   dialogVisible.value = true;
 };
 
 const handleSubmit = async () => {
   await formRef.value.validate();
   try {
+    // 确保 roleIds 是数字数组，避免 null/undefined 导致后端报错
+    const roleIds = Array.isArray(form.roleIds) 
+      ? form.roleIds.map(id => Number(id)) 
+      : [];
+    
     if (isEdit.value) {
-      await userApi.update(form.id, { email: form.email, phone: form.phone, roleIds: form.roleIds });
+      await userApi.update(form.id, { 
+        email: form.email, 
+        phone: form.phone, 
+        roleIds: roleIds 
+      });
       ElMessage.success('更新成功');
     } else {
-      await userApi.create(form);
+      await userApi.create({
+        username: form.username,
+        email: form.email,
+        phone: form.phone || undefined,
+        password: form.password,
+        roleIds: roleIds
+      });
       ElMessage.success('创建成功');
     }
     dialogVisible.value = false;
     loadUsers();
   } catch (error: any) {
+    console.error('操作失败:', error);
     ElMessage.error(error.response?.data?.message || '操作失败');
   }
 };

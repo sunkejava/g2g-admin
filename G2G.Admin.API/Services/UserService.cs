@@ -46,7 +46,7 @@ public class UpdateUserDto
 {
     public string? Email { get; set; }
     public string? Phone { get; set; }
-    public List<int> RoleIds { get; set; } = new();
+    public List<int>? RoleIds { get; set; }
 }
 
 public class UserService : IUserService
