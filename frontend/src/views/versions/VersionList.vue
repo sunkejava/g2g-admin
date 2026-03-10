@@ -17,8 +17,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="uploadedAt" label="上传时间" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="handleDownload(row)">下载</el-button>
             <el-button link type="warning" @click="handleCompare(row)">对比</el-button>
             <el-button link type="danger" @click="handleRollback(row)" :disabled="row.isCurrent">回滚</el-button>
             <el-button link type="danger" @click="handleDelete(row)" :disabled="row.isCurrent">删除</el-button>
@@ -141,6 +142,63 @@ const handleDelete = async (row: any) => {
   } catch (error) {
     ElMessage.error('删除失败');
   }
+};
+
+const handleDownload = (row: any) => {
+  // 检查用户是否有下载权限（根据角色判断）
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userMenus = JSON.parse(localStorage.getItem('userMenus') || '[]');
+  
+  // 只要有版本管理菜单权限就可以下载
+  const hasPermission = userMenus.some((menu: any) => menu.code === 'versions');
+  
+  if (!hasPermission) {
+    ElMessage.error('没有下载权限，请联系管理员分配版本管理权限');
+    return;
+  }
+  
+  // 构建下载 URL（需要带上 token）
+  const token = localStorage.getItem('token');
+  const downloadUrl = `/api/versions/download/${row.id}`;
+  
+  // 创建临时链接下载
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.setAttribute('download', '');
+  link.setAttribute('target', '_blank');
+  // 添加 authorization header
+  link.onclick = (e) => {
+    e.preventDefault();
+    // 使用 fetch 下载，可以添加 header
+    fetch(downloadUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('下载失败');
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${row.versionNo}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      ElMessage.success('下载成功');
+    })
+    .catch(error => {
+      ElMessage.error('下载失败：' + error.message);
+    });
+  };
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 const handleCompare = (row: any) => {

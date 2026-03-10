@@ -84,14 +84,13 @@ const handleRegister = async () => {
   loading.value = true;
   
   try {
-    await api.post('/users', {
+    await api.post('/auth/register', {
       username: form.username,
       email: form.email,
       phone: form.phone || undefined,
       password: form.password,
-      roleIds: [2] // 默认分配普通用户角色
     });
-    ElMessage.success('注册成功，请登录');
+    ElMessage.success('注册成功，已自动分配"普通用户"角色，请登录');
     router.push('/login');
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '注册失败');

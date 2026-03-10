@@ -61,6 +61,25 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    {
+        try
+        {
+            var ip = GetClientIp();
+            var result = await _authService.RegisterAsync(request, ip);
+            
+            _logger.LogInformation("用户注册成功：{Username}", request.Username);
+            return Ok(new { message = "注册成功，请登录" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "用户注册失败：{Username}", request.Username);
+            return BadRequest(new { message = "注册失败，用户名或邮箱可能已存在" });
+        }
+    }
+
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout()
@@ -77,4 +96,12 @@ public class AuthController : ControllerBase
         }
         return Request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
+}
+
+public class RegisterRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string Password { get; set; } = string.Empty;
 }

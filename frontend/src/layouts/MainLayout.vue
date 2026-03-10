@@ -66,6 +66,9 @@
       </el-header>
       <el-main class="main">
         <router-view />
+        <div class="copyright">
+          <p>© 2026 DeclienAberdeen. All rights reserved.</p>
+        </div>
       </el-main>
     </el-container>
   </el-container>
@@ -162,5 +165,22 @@ onMounted(() => {
 .main {
   background-color: #f0f2f5;
   padding: 20px;
+  position: relative;
+  min-height: calc(100vh - 60px);
+}
+
+.copyright {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+  padding: 10px;
+}
+
+.copyright p {
+  margin: 0;
 }
 </style>

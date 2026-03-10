@@ -131,7 +131,6 @@ public class VersionsController : ControllerBase
     }
 
     [HttpGet("download/{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> Download(int id)
     {
         var version = await _versionService.GetByIdAsync(id);
@@ -140,6 +139,13 @@ public class VersionsController : ControllerBase
         var fullPath = Path.Combine(_environment.ContentRootPath, version.FilePath);
         if (!System.IO.File.Exists(fullPath)) return NotFound();
 
-        return PhysicalFile(fullPath, "application/octet-stream", version.ReleaseNotes);
+        // 记录下载日志
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = userIdClaim != null && int.TryParse(userIdClaim.Value, out var uid) ? uid : 0;
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
+        
+        _logger.LogInformation("用户 {Username} (ID={UserId}) 下载版本 {VersionNo}", username, userId, version.VersionNo);
+
+        return PhysicalFile(fullPath, "application/octet-stream", $"{version.VersionNo}.zip");
     }
 }

@@ -12,6 +12,7 @@ namespace G2G.Admin.API.Services;
 public interface IAuthService
 {
     Task<LoginResponse?> LoginAsync(LoginRequest request, string ip, string userAgent);
+    Task<User?> RegisterAsync(AuthController.RegisterRequest request, string ip);
     string GenerateToken(User user);
 }
 
@@ -57,6 +58,53 @@ public class AuthService : IAuthService
                 Email = user.Email
             }
         };
+    }
+
+    public async Task<User?> RegisterAsync(AuthController.RegisterRequest request, string ip)
+    {
+        // 检查用户名是否已存在
+        var existingUser = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Email);
+        
+        if (existingUser != null)
+        {
+            throw new Exception("用户名或邮箱已存在");
+        }
+
+        // 创建用户
+        var user = new User
+        {
+            Username = request.Username,
+            Email = request.Email,
+            Phone = request.Phone,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Status = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        // 查找"普通用户"角色并分配
+        var commonUserRole = await _dbContext.Roles
+            .FirstOrDefaultAsync(r => r.Name == "普通用户");
+        
+        if (commonUserRole != null)
+        {
+            _dbContext.UserRoles.Add(new UserRole
+            {
+                UserId = user.Id,
+                RoleId = commonUserRole.Id
+            });
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("新用户 {Username} 已分配'普通用户'角色", request.Username);
+        }
+        else
+        {
+            _logger.LogWarning("未找到'普通用户'角色，请手动创建该角色");
+        }
+
+        return user;
     }
 
     public string GenerateToken(User user)
