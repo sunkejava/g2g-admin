@@ -33,7 +33,7 @@ public class SettingService : ISettingService
 
     public async Task<Setting?> GetByKeyAsync(string key)
     {
-        return await _dbContext.Settings.FindAsync(key);
+        return await _dbContext.Settings.FirstOrDefaultAsync(s => s.Key == key);
     }
 
     public async Task<string?> GetValueAsync(string key, string? defaultValue = null)
@@ -52,7 +52,7 @@ public class SettingService : ISettingService
 
     public async Task<Setting> SetAsync(string key, string value, string? description = null)
     {
-        var setting = await _dbContext.Settings.FindAsync(key);
+        var setting = await _dbContext.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (setting == null)
         {
             setting = new Setting { Key = key };
@@ -69,7 +69,7 @@ public class SettingService : ISettingService
 
     public async Task<bool> DeleteAsync(string key)
     {
-        var setting = await _dbContext.Settings.FindAsync(key);
+        var setting = await _dbContext.Settings.FirstOrDefaultAsync(s => s.Key == key);
         if (setting == null) return false;
 
         _dbContext.Settings.Remove(setting);
