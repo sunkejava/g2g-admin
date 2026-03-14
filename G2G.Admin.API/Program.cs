@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using G2G.Admin.API.Data;
 using G2G.Admin.API.Services;
+using G2G.Admin.API;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +84,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<G2GDbContext>();
     dbContext.Database.EnsureCreated();
+    
+    // 执行数据库升级（处理旧版本新增字段）
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    DatabaseUpgrade.Upgrade(connectionString!);
     
     var initializationService = scope.ServiceProvider.GetRequiredService<IDataInitializationService>();
     await initializationService.InitializeAsync();

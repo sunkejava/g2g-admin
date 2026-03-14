@@ -43,6 +43,10 @@ Thumbs.db
 .env.local
 appsettings.Development.json
 
+# Test scripts
+test-*.sh
+test-*.txt
+
 # Uploads
 uploads/
 

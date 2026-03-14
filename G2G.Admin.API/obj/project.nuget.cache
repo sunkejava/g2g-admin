@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "xNnPyVHqp4M=",
+  "dgSpecHash": "HkA3LmGMJEs=",
   "success": true,
   "projectFilePath": "/home/sunke/.openclaw/workspace/g2g-admin/G2G.Admin.API/G2G.Admin.API.csproj",
   "expectedPackageFiles": [
@@ -17,6 +17,7 @@
     "/home/sunke/.nuget/packages/microsoft.codeanalysis.csharp.workspaces/5.0.0/microsoft.codeanalysis.csharp.workspaces.5.0.0.nupkg.sha512",
     "/home/sunke/.nuget/packages/microsoft.codeanalysis.workspaces.common/5.0.0/microsoft.codeanalysis.workspaces.common.5.0.0.nupkg.sha512",
     "/home/sunke/.nuget/packages/microsoft.codeanalysis.workspaces.msbuild/5.0.0/microsoft.codeanalysis.workspaces.msbuild.5.0.0.nupkg.sha512",
+    "/home/sunke/.nuget/packages/microsoft.data.sqlite/10.0.3/microsoft.data.sqlite.10.0.3.nupkg.sha512",
     "/home/sunke/.nuget/packages/microsoft.data.sqlite.core/10.0.3/microsoft.data.sqlite.core.10.0.3.nupkg.sha512",
     "/home/sunke/.nuget/packages/microsoft.entityframeworkcore/10.0.3/microsoft.entityframeworkcore.10.0.3.nupkg.sha512",
     "/home/sunke/.nuget/packages/microsoft.entityframeworkcore.abstractions/10.0.3/microsoft.entityframeworkcore.abstractions.10.0.3.nupkg.sha512",
@@ -63,8 +64,11 @@
     "/home/sunke/.nuget/packages/system.composition.hosting/9.0.0/system.composition.hosting.9.0.0.nupkg.sha512",
     "/home/sunke/.nuget/packages/system.composition.runtime/9.0.0/system.composition.runtime.9.0.0.nupkg.sha512",
     "/home/sunke/.nuget/packages/system.composition.typedparts/9.0.0/system.composition.typedparts.9.0.0.nupkg.sha512",
+    "/home/sunke/.nuget/packages/system.configuration.configurationmanager/10.0.0/system.configuration.configurationmanager.10.0.0.nupkg.sha512",
+    "/home/sunke/.nuget/packages/system.diagnostics.performancecounter/10.0.0/system.diagnostics.performancecounter.10.0.0.nupkg.sha512",
     "/home/sunke/.nuget/packages/system.identitymodel.tokens.jwt/8.0.1/system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512",
-    "/home/sunke/.nuget/packages/system.security.cryptography.pkcs/10.0.0/system.security.cryptography.pkcs.10.0.0.nupkg.sha512"
+    "/home/sunke/.nuget/packages/system.security.cryptography.pkcs/10.0.0/system.security.cryptography.pkcs.10.0.0.nupkg.sha512",
+    "/home/sunke/.nuget/packages/system.security.cryptography.protecteddata/10.0.0/system.security.cryptography.protecteddata.10.0.0.nupkg.sha512"
   ],
   "logs": []
 }
