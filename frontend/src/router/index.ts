@@ -4,7 +4,7 @@ import MainLayout from '@/layouts/MainLayout.vue';
 // 公开路由（无需登录）
 const publicRoutes = [
   { path: '/login', component: () => import('@/views/Login.vue') },
-  { path: '/register', component: () => import('@/views/Register.vue') },
+  // { path: '/register', component: () => import('@/views/Register.vue') }, // 注册功能已关闭
   { path: '/403', component: () => import('@/views/403.vue') },
 ];
 
@@ -37,7 +37,7 @@ router.beforeEach((to, from, next) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   
   // 公开页面直接访问
-  if (['/login', '/register'].includes(to.path)) {
+  if (['/login'].includes(to.path)) {
     if (token) {
       next('/');
     } else {

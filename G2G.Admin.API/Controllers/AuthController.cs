@@ -47,40 +47,12 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        try
-        {
-            var ip = GetClientIp();
-            var result = await _authService.RegisterAsync(request, ip);
-            
-            // 记录操作日志
-            await _logHelper.LogOperationAsync(
-                $"用户注册：{request.Username}",
-                "认证管理",
-                $"邮箱：{request.Email}, IP: {ip}"
-            );
-            
-            // 记录系统日志
-            await _logHelper.LogSystemAsync(
-                "Information",
-                "AuthController",
-                $"新用户注册：{request.Username}"
-            );
-            
-            return Ok(new { message = "注册成功，请登录" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "用户注册失败：{Username}", request.Username);
-            
-            // 记录系统错误日志
-            await _logHelper.LogSystemAsync(
-                "Warning",
-                "AuthController",
-                $"用户注册失败：{request.Username}, 错误：{ex.Message}"
-            );
-            
-            return BadRequest(new { message = "注册失败，用户名或邮箱可能已存在" });
-        }
+        // 注册功能已关闭
+        _logger.LogWarning("注册功能已关闭，IP: {IP} 尝试注册用户名：{Username}", GetClientIp(), request.Username);
+        
+        return BadRequest(new { 
+            message = "注册功能已关闭，如需创建账号请联系管理员" 
+        });
     }
 
     [HttpPost("logout")]

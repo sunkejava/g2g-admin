@@ -14,7 +14,9 @@
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        <el-link type="primary" @click="$router.push('/register')">注册账号</el-link>
+        <el-text type="info" size="small">
+          ℹ️ 注册功能已关闭，如需创建账号请联系管理员
+        </el-text>
       </div>
     </el-card>
   </div>
