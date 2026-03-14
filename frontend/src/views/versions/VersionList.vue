@@ -7,6 +7,7 @@
       <el-table :data="versions" style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="versionNo" label="版本号" />
+        <el-table-column prop="originalFileName" label="文件名" show-overflow-tooltip />
         <el-table-column prop="fileSize" label="文件大小">
           <template #default="{ row }">{{ (row.fileSize / 1024 / 1024).toFixed(2) }} MB</template>
         </el-table-column>
@@ -145,60 +146,43 @@ const handleDelete = async (row: any) => {
 };
 
 const handleDownload = (row: any) => {
-  // 检查用户是否有下载权限（根据角色判断）
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const userMenus = JSON.parse(localStorage.getItem('userMenus') || '[]');
+  // 构建下载 URL（匿名访问，无需 Token）
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  const downloadUrl = `${baseUrl}/api/versions/download/${row.id}`;
   
-  // 只要有版本管理菜单权限就可以下载
-  const hasPermission = userMenus.some((menu: any) => menu.code === 'versions');
-  
-  if (!hasPermission) {
-    ElMessage.error('没有下载权限，请联系管理员分配版本管理权限');
-    return;
-  }
-  
-  // 构建下载 URL（需要带上 token）
-  const token = localStorage.getItem('token');
-  const downloadUrl = `/api/versions/download/${row.id}`;
-  
-  // 创建临时链接下载
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.setAttribute('download', '');
-  link.setAttribute('target', '_blank');
-  // 添加 authorization header
-  link.onclick = (e) => {
-    e.preventDefault();
-    // 使用 fetch 下载，可以添加 header
-    fetch(downloadUrl, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
+  // 使用 fetch 下载，获取原始文件名
+  fetch(downloadUrl)
     .then(response => {
       if (!response.ok) {
         throw new Error('下载失败');
       }
-      return response.blob();
+      // 从 Content-Disposition 头获取文件名
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `${row.versionNo}.zip`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      return response.blob().then(blob => ({ blob, filename }));
     })
-    .then(blob => {
+    .then(({ blob, filename }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${row.versionNo}.zip`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      ElMessage.success('下载成功');
+      ElMessage.success(`下载成功：${filename}`);
     })
     .catch(error => {
       ElMessage.error('下载失败：' + error.message);
     });
-  };
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 };
 
 const handleCompare = (row: any) => {
