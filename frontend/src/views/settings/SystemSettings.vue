@@ -180,38 +180,54 @@ const formatUptime = (uptime: string | Date) => {
 
 const loadBasicConfig = async () => {
   try {
-    const settings = await api.get('/settings');
-    const basicSetting = settings.find((s: any) => s.key === 'System.Basic');
+    const settings: any[] = await api.get('/settings');
+    console.log('加载配置列表:', settings);
+    const basicSetting = settings.find(s => s.key === 'System.Basic');
     if (basicSetting?.value) {
-      const config = JSON.parse(basicSetting.value);
-      if (config.systemName) basicConfig.systemName = config.systemName;
-      if (config.systemIcon) basicConfig.systemIcon = config.systemIcon;
-      if (config.version) basicConfig.version = config.version;
-      if (config.copyright) basicConfig.copyright = config.copyright;
-      if (config.support) basicConfig.support = config.support;
+      try {
+        const config = JSON.parse(basicSetting.value);
+        console.log('解析基本配置:', config);
+        if (config.systemName) basicConfig.systemName = config.systemName;
+        if (config.systemIcon) basicConfig.systemIcon = config.systemIcon;
+        if (config.version) basicConfig.version = config.version;
+        if (config.copyright) basicConfig.copyright = config.copyright;
+        if (config.support) basicConfig.support = config.support;
+      } catch (parseError) {
+        console.error('解析配置失败:', parseError);
+      }
+    } else {
+      console.log('未找到 System.Basic 配置，使用默认值');
     }
-  } catch (error) {
-    console.error('加载基本配置失败', error);
+  } catch (error: any) {
+    console.error('加载基本配置失败:', error.message || error);
   }
 };
 
 const handleSaveBasic = async () => {
   try {
+    const configValue = JSON.stringify({
+      systemName: basicConfig.systemName,
+      systemIcon: basicConfig.systemIcon,
+      version: basicConfig.version,
+      copyright: basicConfig.copyright,
+      support: basicConfig.support
+    });
+    console.log('保存配置:', configValue);
+    
     await api.put('/settings/System.Basic', {
-      value: JSON.stringify({
-        systemName: basicConfig.systemName,
-        systemIcon: basicConfig.systemIcon,
-        version: basicConfig.version,
-        copyright: basicConfig.copyright,
-        support: basicConfig.support
-      }),
+      value: configValue,
       description: '系统基本配置（JSON 格式）'
     });
+    
     ElMessage.success('保存成功');
     // 更新页面标题
     document.title = basicConfig.systemName;
-  } catch (error) {
-    ElMessage.error('保存失败');
+    
+    // 重新加载配置
+    await loadBasicConfig();
+  } catch (error: any) {
+    console.error('保存配置失败:', error);
+    ElMessage.error('保存失败：' + (error.response?.data?.message || error.message));
   }
 };
 
@@ -236,31 +252,36 @@ const loadSystemInfo = async () => {
 const loadAdvancedSettings = async () => {
   loading.value = true;
   try {
-    const settings = await api.get('/settings');
-    advancedSettings.value = settings.filter((s: any) => s.key !== 'System.Basic');
-  } catch (error) {
-    ElMessage.error('加载配置失败');
+    const settings: any[] = await api.get('/settings');
+    console.log('高级配置列表:', settings);
+    advancedSettings.value = settings.filter(s => s.key !== 'System.Basic');
+  } catch (error: any) {
+    console.error('加载高级配置失败:', error);
+    ElMessage.error('加载配置失败：' + (error.message || '未知错误'));
   } finally {
     loading.value = false;
   }
 };
 
 const handleEditAdvanced = (row: any) => {
-  Object.assign(editForm, { key: row.key, value: row.value, description: row.description });
+  console.log('编辑配置:', row);
+  Object.assign(editForm, { key: row.key, value: row.value, description: row.description || '' });
   dialogVisible.value = true;
 };
 
 const handleSaveAdvanced = async () => {
   try {
+    console.log('保存高级配置:', editForm);
     await api.put(`/settings/${editForm.key}`, {
       value: editForm.value,
       description: editForm.description
     });
     ElMessage.success('保存成功');
     dialogVisible.value = false;
-    loadAdvancedSettings();
-  } catch (error) {
-    ElMessage.error('保存失败');
+    await loadAdvancedSettings();
+  } catch (error: any) {
+    console.error('保存高级配置失败:', error);
+    ElMessage.error('保存失败：' + (error.response?.data?.message || error.message));
   }
 };
 

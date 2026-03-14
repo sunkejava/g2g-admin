@@ -42,21 +42,15 @@ public class MonitorService : IMonitorService
     private readonly G2GDbContext _dbContext;
     private readonly ILogger<MonitorService> _logger;
     private DateTime _lastReadTime = DateTime.MinValue;
-    private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
+    private ulong _lastCpuTotal = 0;
+    private ulong _lastCpuIdle = 0;
     private System.Diagnostics.PerformanceCounter? _cpuCounter;
 
     public MonitorService(G2GDbContext dbContext, ILogger<MonitorService> logger)
     {
         _dbContext = dbContext;
         _logger = logger;
-        InitializeCpu();
         InitializeSystemCpuCounter();
-    }
-
-    private void InitializeCpu()
-    {
-        _lastReadTime = DateTime.UtcNow;
-        _lastTotalProcessorTime = Process.GetCurrentProcess().TotalProcessorTime;
     }
 
     private void InitializeSystemCpuCounter()
@@ -67,6 +61,7 @@ public class MonitorService : IMonitorService
             {
                 _cpuCounter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
                 _cpuCounter.NextValue(); // 第一次读取总是 0，预热一下
+                System.Threading.Thread.Sleep(100); // 等待一下
             }
             catch (Exception ex)
             {
@@ -382,11 +377,10 @@ public class MonitorService : IMonitorService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "读取 Windows CPU 性能计数器失败");
-                // 回退到进程级计算
             }
         }
         
-        // Linux/macOS: 读取 /proc/stat 或使用回退方案
+        // Linux: 读取 /proc/stat 计算 CPU 使用率
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             try
@@ -399,30 +393,21 @@ public class MonitorService : IMonitorService
             }
         }
         
-        // 回退方案：基于当前进程 CPU 时间计算（不准确但可用）
-        try
+        // macOS: 使用 top 命令
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            var now = DateTime.UtcNow;
-            var process = Process.GetCurrentProcess();
-            var currentTotalProcessorTime = process.TotalProcessorTime;
-            var timeDiff = (now - _lastReadTime).TotalMilliseconds;
-            var cpuDiff = (currentTotalProcessorTime - _lastTotalProcessorTime).TotalMilliseconds;
-            
-            if (timeDiff <= 0) return 0;
-            
-            // 计算 CPU 使用率（考虑多核）
-            var cpuUsage = cpuDiff / timeDiff * 100 / Environment.ProcessorCount;
-            
-            _lastReadTime = now;
-            _lastTotalProcessorTime = currentTotalProcessorTime;
-            
-            return Math.Min(Math.Round(cpuUsage, 2), 100);
+            try
+            {
+                return GetMacOSCpuUsage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取 macOS CPU 使用率失败");
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "获取 CPU 使用率失败");
-            return 0;
-        }
+        
+        // 回退方案：返回 0
+        return 0;
     }
 
     /// <summary>
@@ -443,45 +428,67 @@ public class MonitorService : IMonitorService
         }
 
         var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 5)
+        if (parts.Length < 8)
         {
             return 0;
         }
 
-        // cpu user nice system idle iowait irq softirq
+        // cpu user nice system idle iowait irq softirq steal guest guest_nice
         var user = ulong.Parse(parts[1]);
         var nice = ulong.Parse(parts[2]);
         var system = ulong.Parse(parts[3]);
         var idle = ulong.Parse(parts[4]);
-        var iowait = parts.Length > 5 ? ulong.Parse(parts[5]) : 0;
-        var irq = parts.Length > 6 ? ulong.Parse(parts[6]) : 0;
-        var softirq = parts.Length > 7 ? ulong.Parse(parts[7]) : 0;
+        var iowait = ulong.Parse(parts[5]);
+        var irq = ulong.Parse(parts[6]);
+        var softirq = ulong.Parse(parts[7]);
 
         var total = user + nice + system + idle + iowait + irq + softirq;
         var idleTotal = idle + iowait;
 
-        // 计算与上次读取的差值
-        var now = DateTime.UtcNow;
+        // 第一次读取，初始化
         if (_lastReadTime == DateTime.MinValue)
         {
-            _lastReadTime = now;
-            _lastTotalProcessorTime = TimeSpan.FromTicks((long)(total - idleTotal));
+            _lastReadTime = DateTime.UtcNow;
+            _lastCpuTotal = total;
+            _lastCpuIdle = idleTotal;
             return 0;
         }
 
-        var prevTotal = _lastTotalProcessorTime.Ticks;
-        var prevIdle = (total - idleTotal - (ulong)(prevTotal / TimeSpan.TicksPerMillisecond * 10)); // 近似值
+        // 计算差值
+        var totalDiff = total - _lastCpuTotal;
+        var idleDiff = idleTotal - _lastCpuIdle;
 
-        _lastReadTime = now;
-        _lastTotalProcessorTime = TimeSpan.FromTicks((long)(total - idleTotal));
+        // 更新上次的值
+        _lastReadTime = DateTime.UtcNow;
+        _lastCpuTotal = total;
+        _lastCpuIdle = idleTotal;
 
-        var totalDiff = total - prevIdle - (ulong)(prevTotal / TimeSpan.TicksPerMillisecond * 10);
-        var idleDiff = idleTotal - prevIdle;
-
+        // 计算 CPU 使用率
         if (totalDiff == 0) return 0;
 
         var cpuUsage = (1.0 - (double)idleDiff / totalDiff) * 100.0;
         return Math.Min(Math.Round(cpuUsage, 2), 100);
+    }
+
+    /// <summary>
+    /// macOS CPU 使用率（使用 top 命令）
+    /// </summary>
+    private double GetMacOSCpuUsage()
+    {
+        var output = ExecuteCommand("top", "-l 1 -n 0 | grep -i cpu | tail -1");
+        if (string.IsNullOrEmpty(output))
+        {
+            return 0;
+        }
+
+        // 解析：CPU usage: 5.12% user, 25.34% sys, 69.53% idle
+        var idleMatch = System.Text.RegularExpressions.Regex.Match(output, @"(\d+\.?\d*)%\s*idle");
+        if (idleMatch.Success && double.TryParse(idleMatch.Groups[1].Value, out var idle))
+        {
+            return Math.Min(Math.Round(100.0 - idle, 2), 100);
+        }
+
+        return 0;
     }
 
     /// <summary>
