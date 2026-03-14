@@ -1,7 +1,10 @@
 <template>
   <el-container class="layout">
     <el-aside width="200px" class="aside">
-      <div class="logo">G2G Admin</div>
+      <div class="logo">
+        <img v-if="systemConfig.icon" :src="systemConfig.icon" alt="Logo" style="height: 32px; margin-right: 10px" />
+        {{ systemConfig.name }}
+      </div>
       <el-menu 
         :default-active="activeMenu" 
         router 
@@ -56,7 +59,7 @@
     </el-aside>
     <el-container>
       <el-header class="header">
-        <div class="header-left">G2G 后台管理系统</div>
+        <div class="header-left">{{ systemConfig.fullName }}</div>
         <div class="header-right">
           <ThemeSwitcher />
           <el-icon :size="20"><User /></el-icon>
@@ -67,7 +70,7 @@
       <el-main class="main">
         <router-view />
         <div class="copyright">
-          <p>© 2026 DeclienAberdeen. All rights reserved.</p>
+          <p>{{ systemConfig.copyright }} {{ systemConfig.support ? '· ' + systemConfig.support : '' }}</p>
         </div>
       </el-main>
     </el-container>
@@ -75,16 +78,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { UserFilled, Lock, Upload, Document, Setting, Monitor, User } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
+import api from '@/api/request';
 
 const route = useRoute();
 const router = useRouter();
 
 const userMenus = ref<any[]>([]);
+
+// 系统配置
+const systemConfig = reactive({
+  name: 'G2G Admin',
+  fullName: 'G2G 后台管理系统',
+  icon: '/g2g-logo.svg',
+  version: '1.1.0',
+  copyright: '© 2026 G2G Team',
+  support: ''
+});
 
 const activeMenu = computed(() => route.path);
 const user = computed(() => JSON.parse(localStorage.getItem('user') || '{}'));
@@ -118,12 +132,37 @@ const handleLogout = async () => {
   router.push('/login');
 };
 
+const loadSystemConfig = async () => {
+  try {
+    const settings = await api.get('/settings');
+    const basicSetting = settings.find((s: any) => s.key === 'System.Basic');
+    if (basicSetting?.value) {
+      const config = JSON.parse(basicSetting.value);
+      if (config.systemName) {
+        systemConfig.name = config.systemName;
+        systemConfig.fullName = config.systemName;
+      }
+      if (config.systemIcon) systemConfig.icon = config.systemIcon;
+      if (config.version) systemConfig.version = config.version;
+      if (config.copyright) systemConfig.copyright = config.copyright;
+      if (config.support) systemConfig.support = config.support;
+      
+      // 更新页面标题
+      document.title = systemConfig.fullName;
+    }
+  } catch (error) {
+    console.error('加载系统配置失败', error);
+  }
+};
+
 onMounted(() => {
   // 加载用户菜单
   const menus = localStorage.getItem('userMenus');
   if (menus) {
     userMenus.value = JSON.parse(menus);
   }
+  // 加载系统配置
+  loadSystemConfig();
 });
 </script>
 

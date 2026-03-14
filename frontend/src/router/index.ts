@@ -20,7 +20,7 @@ const baseRoutes = [
       { path: 'roles', component: () => import('@/views/roles/RoleList.vue'), meta: { code: 'roles' } },
       { path: 'versions', component: () => import('@/views/versions/VersionList.vue'), meta: { code: 'versions' } },
       { path: 'logs', component: () => import('@/views/logs/LogList.vue'), meta: { code: 'logs' } },
-      { path: 'settings', component: () => import('@/views/settings/SettingList.vue'), meta: { code: 'settings' } },
+      { path: 'settings', component: () => import('@/views/settings/SystemSettings.vue'), meta: { code: 'settings' } },
       { path: 'monitor', component: () => import('@/views/monitor/SystemMonitor.vue'), meta: { code: 'monitor' } },
     ],
   },

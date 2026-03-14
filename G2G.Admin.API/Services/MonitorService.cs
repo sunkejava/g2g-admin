@@ -43,18 +43,36 @@ public class MonitorService : IMonitorService
     private readonly ILogger<MonitorService> _logger;
     private DateTime _lastReadTime = DateTime.MinValue;
     private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
+    private System.Diagnostics.PerformanceCounter? _cpuCounter;
 
     public MonitorService(G2GDbContext dbContext, ILogger<MonitorService> logger)
     {
         _dbContext = dbContext;
         _logger = logger;
         InitializeCpu();
+        InitializeSystemCpuCounter();
     }
 
     private void InitializeCpu()
     {
         _lastReadTime = DateTime.UtcNow;
         _lastTotalProcessorTime = Process.GetCurrentProcess().TotalProcessorTime;
+    }
+
+    private void InitializeSystemCpuCounter()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try
+            {
+                _cpuCounter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
+                _cpuCounter.NextValue(); // 第一次读取总是 0，预热一下
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "初始化 Windows CPU 性能计数器失败，将使用回退方案");
+            }
+        }
     }
 
     public async Task<SystemInfoDto> GetSystemInfoAsync()
@@ -353,6 +371,35 @@ public class MonitorService : IMonitorService
     /// </summary>
     private double GetCpuUsage()
     {
+        // Windows: 使用 PerformanceCounter 获取系统 CPU 使用率
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _cpuCounter != null)
+        {
+            try
+            {
+                var cpuUsage = _cpuCounter.NextValue();
+                return Math.Min(Math.Round(cpuUsage, 2), 100);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取 Windows CPU 性能计数器失败");
+                // 回退到进程级计算
+            }
+        }
+        
+        // Linux/macOS: 读取 /proc/stat 或使用回退方案
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            try
+            {
+                return GetLinuxCpuUsage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取 Linux CPU 使用率失败");
+            }
+        }
+        
+        // 回退方案：基于当前进程 CPU 时间计算（不准确但可用）
         try
         {
             var now = DateTime.UtcNow;
@@ -376,6 +423,65 @@ public class MonitorService : IMonitorService
             _logger.LogWarning(ex, "获取 CPU 使用率失败");
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Linux CPU 使用率（读取 /proc/stat）
+    /// </summary>
+    private double GetLinuxCpuUsage()
+    {
+        var statPath = "/proc/stat";
+        if (!File.Exists(statPath))
+        {
+            return 0;
+        }
+
+        var line = File.ReadLines(statPath).FirstOrDefault(l => l.StartsWith("cpu "));
+        if (string.IsNullOrEmpty(line))
+        {
+            return 0;
+        }
+
+        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 5)
+        {
+            return 0;
+        }
+
+        // cpu user nice system idle iowait irq softirq
+        var user = ulong.Parse(parts[1]);
+        var nice = ulong.Parse(parts[2]);
+        var system = ulong.Parse(parts[3]);
+        var idle = ulong.Parse(parts[4]);
+        var iowait = parts.Length > 5 ? ulong.Parse(parts[5]) : 0;
+        var irq = parts.Length > 6 ? ulong.Parse(parts[6]) : 0;
+        var softirq = parts.Length > 7 ? ulong.Parse(parts[7]) : 0;
+
+        var total = user + nice + system + idle + iowait + irq + softirq;
+        var idleTotal = idle + iowait;
+
+        // 计算与上次读取的差值
+        var now = DateTime.UtcNow;
+        if (_lastReadTime == DateTime.MinValue)
+        {
+            _lastReadTime = now;
+            _lastTotalProcessorTime = TimeSpan.FromTicks((long)(total - idleTotal));
+            return 0;
+        }
+
+        var prevTotal = _lastTotalProcessorTime.Ticks;
+        var prevIdle = (total - idleTotal - (ulong)(prevTotal / TimeSpan.TicksPerMillisecond * 10)); // 近似值
+
+        _lastReadTime = now;
+        _lastTotalProcessorTime = TimeSpan.FromTicks((long)(total - idleTotal));
+
+        var totalDiff = total - prevIdle - (ulong)(prevTotal / TimeSpan.TicksPerMillisecond * 10);
+        var idleDiff = idleTotal - prevIdle;
+
+        if (totalDiff == 0) return 0;
+
+        var cpuUsage = (1.0 - (double)idleDiff / totalDiff) * 100.0;
+        return Math.Min(Math.Round(cpuUsage, 2), 100);
     }
 
     /// <summary>
