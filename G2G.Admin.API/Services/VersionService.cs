@@ -9,7 +9,7 @@ public interface IVersionService
     Task<PagedResult<AppVersion>> GetAllAsync(int page = 1, int pageSize = 10);
     Task<AppVersion?> GetByIdAsync(int id);
     Task<AppVersion?> GetCurrentVersionAsync();
-    Task<AppVersion> UploadAsync(UploadVersionDto dto, string filePath, string fileHash, long fileSize, int uploadedBy);
+    Task<AppVersion> UploadAsync(UploadVersionDto dto, string filePath, string fileHash, long fileSize, int uploadedBy, string originalFileName);
     Task<bool> DeleteAsync(int id);
     Task<bool> RollbackAsync(int id);
     Task<VersionCheckResponse> CheckVersionAsync(int userId, string currentVersion);
@@ -20,6 +20,7 @@ public class UploadVersionDto
 {
     public string VersionNo { get; set; } = string.Empty;
     public string ReleaseNotes { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
 }
 
 public class VersionCheckResponse
@@ -78,7 +79,7 @@ public class VersionService : IVersionService
         return await _dbContext.Versions.FirstOrDefaultAsync(v => v.IsCurrent);
     }
 
-    public async Task<AppVersion> UploadAsync(UploadVersionDto dto, string filePath, string fileHash, long fileSize, int uploadedBy)
+    public async Task<AppVersion> UploadAsync(UploadVersionDto dto, string filePath, string fileHash, long fileSize, int uploadedBy, string originalFileName)
     {
         var currentVersion = await GetCurrentVersionAsync();
         if (currentVersion != null)
@@ -90,6 +91,7 @@ public class VersionService : IVersionService
         {
             VersionNo = dto.VersionNo,
             FilePath = filePath,
+            OriginalFileName = originalFileName,
             FileHash = fileHash,
             FileSize = fileSize,
             ReleaseNotes = dto.ReleaseNotes,

@@ -5,6 +5,7 @@ public class AppVersion
     public int Id { get; set; }
     public string VersionNo { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
     public string FileHash { get; set; } = string.Empty;
     public long FileSize { get; set; }
     public string ReleaseNotes { get; set; } = string.Empty;

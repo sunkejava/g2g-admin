@@ -80,8 +80,8 @@ public class VersionsController : ControllerBase
                     var hashBytes = md5.ComputeHash(fileStream);
                     var fileHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
 
-                    var dto = new UploadVersionDto { VersionNo = versionNo, ReleaseNotes = releaseNotes };
-                    var version = await _versionService.UploadAsync(dto, filePath, fileHash, file.Length, uploadedBy);
+                    var dto = new UploadVersionDto { VersionNo = versionNo, ReleaseNotes = releaseNotes, OriginalFileName = file.FileName };
+                    var version = await _versionService.UploadAsync(dto, filePath, fileHash, file.Length, uploadedBy, file.FileName);
 
                     // 记录操作日志
                     await _logHelper.LogOperationAsync(
@@ -209,9 +209,10 @@ public class VersionsController : ControllerBase
     }
 
     /// <summary>
-    /// PC 客户端获取最新版本信息（需要登录）
+    /// PC 客户端获取最新版本信息（无需登录，支持直接下载）
     /// </summary>
     [HttpGet("upgrade/latest")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetLatestVersion()
     {
         try
@@ -253,6 +254,7 @@ public class VersionsController : ControllerBase
     }
 
     [HttpGet("download/{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Download(int id)
     {
         var version = await _versionService.GetByIdAsync(id);
@@ -261,14 +263,16 @@ public class VersionsController : ControllerBase
         var fullPath = Path.Combine(_environment.ContentRootPath, version.FilePath);
         if (!System.IO.File.Exists(fullPath)) return NotFound();
 
-        // 记录下载日志
+        // 记录下载日志（无需登录，记录为匿名）
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         var userId = userIdClaim != null && int.TryParse(userIdClaim.Value, out var uid) ? uid : 0;
-        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
+        var username = userId > 0 ? User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown" : "anonymous";
         
-        _logger.LogInformation("用户 {Username} (ID={UserId}) 下载版本 {VersionNo}", username, userId, version.VersionNo);
+        _logger.LogInformation("用户 {Username} (ID={UserId}) 下载版本 {VersionNo} (文件：{FileName})", username, userId, version.VersionNo, version.OriginalFileName);
 
-        return PhysicalFile(fullPath, "application/octet-stream", $"{version.VersionNo}.zip");
+        // 使用原始文件名作为下载文件名
+        var downloadFileName = string.IsNullOrEmpty(version.OriginalFileName) ? $"{version.VersionNo}.zip" : version.OriginalFileName;
+        return PhysicalFile(fullPath, "application/octet-stream", downloadFileName);
     }
 }
 
@@ -298,7 +302,7 @@ public class UpgradeResponse
     public double FileSizeMB { get; set; }
     
     /// <summary>
-    /// 下载地址（相对路径，需要带 Token）
+    /// 下载地址（相对路径，支持匿名直接下载）
     /// </summary>
     public string DownloadUrl { get; set; } = string.Empty;
     
